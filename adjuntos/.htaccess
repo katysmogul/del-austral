@@ -1,0 +1,11 @@
+# Esta carpeta guarda archivos subidos (PDF e imágenes) de los legajos.
+# Por seguridad, se impide que cualquier archivo se ejecute como script,
+# incluso si alguien lograra subir un archivo con extensión engañosa.
+
+<FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|cgi|sh)$">
+    Order Allow,Deny
+    Deny from all
+</FilesMatch>
+
+# Evita que se liste el contenido de la carpeta desde el navegador.
+Options -Indexes

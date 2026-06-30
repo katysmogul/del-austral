@@ -1,0 +1,17 @@
+# Archivos subidos por usuarios (PDF, imágenes de pacientes).
+# Nunca deben versionarse: son datos reales de personas.
+adjuntos/*
+!adjuntos/.htaccess
+!adjuntos/.gitkeep
+
+# config/config.php tiene credenciales REALES de la base de
+# datos de este servidor: nunca debe subirse a Gitea.
+config/config.php
+
+# Archivos de sistema operativo / editores
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.vscode/
+.idea/

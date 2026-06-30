@@ -1,0 +1,17 @@
+{
+  "version": "v21",
+  "fecha": "2026-06-30",
+  "descripcion": "El Desarrollador puede renombrar una sede sin perder legajos vinculados, y la pantalla de acceso ya no muestra 'Desarrollador' — ahora hay un botón discreto 'Mantenimiento' fijo arriba",
+  "archivos_criticos": {
+    "index.html": "e3c7585d7aeeffa597d277247d77e07e",
+    "assets/js/app.js": "17c993da060d133fc951c2c73237c053",
+    "assets/css/estilos.css": "60de9e4c4073cd4a57c0c081577d0d25",
+    "api/auth.php": "702ce82cdca08bef95a10e0821c4dc52",
+    "api/citas.php": "7622c3facffd9fb671fa63494be56124",
+    "api/pacientes.php": "df7de793317e8229120119a5050c44c2",
+    "api/adjuntos.php": "8da3f85e26239072953298c60dcb5540",
+    "api/admin.php": "15086c71878647214eedfc18757a4dd1",
+    "confirmar_turno.php": "ad6a798a41a594bb5dcc797295222cce",
+    "exportar.php": "ae88278f3ea445afb0394ef514fe1d83"
+  }
+}
