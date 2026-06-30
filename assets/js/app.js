@@ -2043,6 +2043,36 @@ async function montarVistaDashboard(contenido) {
   }
 }
 
+async function cargarRiesgoAbandono() {
+  const cont = document.getElementById('lista-riesgo-abandono');
+  if (!cont) return;
+  try {
+    const res = await llamarApi(`${API.admin}?accion=riesgo_abandono`, { method: 'GET' });
+    if (!res.datos.length) {
+      cont.innerHTML = '<p class="resumen-vacio">Ningún paciente parece estar abandonando el seguimiento por ahora.</p>';
+      return;
+    }
+    cont.innerHTML = '';
+    res.datos.forEach(p => {
+      const fila = document.createElement('div');
+      fila.className = 'fila-riesgo-abandono';
+      fila.innerHTML = `
+        <div class="info-principal" style="cursor:pointer;">
+          <div class="avatar-iniciales" style="background:#F5E3DC; color:#C4654A;">${(p.nombre[0] + p.apellido[0]).toUpperCase()}</div>
+          <div>
+            <div class="nombre">${escaparHtml(p.nombre)} ${escaparHtml(p.apellido)}</div>
+            <div class="meta">${escaparHtml(p.motivo)}</div>
+          </div>
+        </div>
+      `;
+      fila.querySelector('.info-principal').addEventListener('click', () => irAVista('detalle', { id: p.id }));
+      cont.appendChild(fila);
+    });
+  } catch (e) {
+    cont.innerHTML = '<p class="resumen-vacio">No se pudo calcular esta sección.</p>';
+  }
+}
+
 function renderizarDashboard(cont, d) {
   cont.innerHTML = '';
 
@@ -2086,6 +2116,18 @@ function renderizarDashboard(cont, d) {
     <div class="barras-obras-sociales" id="barras-obras-sociales"></div>
   `;
   cont.appendChild(panelObras);
+
+  // Panel de pacientes en riesgo de abandono (carga aparte, async)
+  const panelRiesgo = document.createElement('div');
+  panelRiesgo.className = 'panel';
+  panelRiesgo.style.marginTop = '18px';
+  panelRiesgo.innerHTML = `
+    <div class="panel-titulo">Pacientes que podrían estar abandonando el seguimiento</div>
+    <p class="panel-subtitulo">Comparamos cuánto pasó desde la última sesión de cada paciente contra su propio ritmo habitual de visitas.</p>
+    <div id="lista-riesgo-abandono"><div class="cargando-pagina chico"><span class="spinner"></span></div></div>
+  `;
+  cont.appendChild(panelRiesgo);
+  cargarRiesgoAbandono();
 
   const contBarras = panelObras.querySelector('#barras-obras-sociales');
   const maximoObra = Math.max(...d.por_obra_social.map(o => o.total), 1);
@@ -2171,7 +2213,7 @@ async function montarVistaConfiguracion(contenido) {
   }
 
   const tabs = contenido.querySelectorAll('[data-tab-config]');
-  const paneles = { sedes: 'panel-config-sedes', usuarios: 'panel-config-usuarios', historial: 'panel-config-historial', version: 'panel-config-version', reportes: 'panel-config-reportes', papelera: 'panel-config-papelera', huerfanos: 'panel-config-huerfanos' };
+  const paneles = { sedes: 'panel-config-sedes', usuarios: 'panel-config-usuarios', historial: 'panel-config-historial', version: 'panel-config-version', reportes: 'panel-config-reportes', papelera: 'panel-config-papelera', huerfanos: 'panel-config-huerfanos', calendario: 'panel-config-calendario' };
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('activo'));
@@ -2186,6 +2228,7 @@ async function montarVistaConfiguracion(contenido) {
       if (destino === 'reportes') cargarReportesSede();
       if (destino === 'papelera') inicializarPapeleraDev();
       if (destino === 'huerfanos') inicializarLegajosHuerfanos();
+      if (destino === 'calendario') inicializarCalendarioLicencias();
     });
   });
 
@@ -2483,6 +2526,67 @@ async function abrirModalTransferirHuerfano(p) {
       btn.textContent = 'Transferir legajo';
     }
   });
+}
+
+let MES_CALENDARIO_LICENCIAS = new Date().getMonth() + 1;
+let ANIO_CALENDARIO_LICENCIAS = new Date().getFullYear();
+
+function inicializarCalendarioLicencias() {
+  document.getElementById('btn-mes-anterior-licencias').onclick = () => {
+    MES_CALENDARIO_LICENCIAS--;
+    if (MES_CALENDARIO_LICENCIAS < 1) { MES_CALENDARIO_LICENCIAS = 12; ANIO_CALENDARIO_LICENCIAS--; }
+    cargarCalendarioLicencias();
+  };
+  document.getElementById('btn-mes-siguiente-licencias').onclick = () => {
+    MES_CALENDARIO_LICENCIAS++;
+    if (MES_CALENDARIO_LICENCIAS > 12) { MES_CALENDARIO_LICENCIAS = 1; ANIO_CALENDARIO_LICENCIAS++; }
+    cargarCalendarioLicencias();
+  };
+  cargarCalendarioLicencias();
+}
+
+async function cargarCalendarioLicencias() {
+  const nombresMes = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+  document.getElementById('titulo-mes-licencias').textContent = `${nombresMes[MES_CALENDARIO_LICENCIAS - 1]} ${ANIO_CALENDARIO_LICENCIAS}`;
+
+  const grilla = document.getElementById('grilla-calendario-licencias');
+  grilla.innerHTML = '<div class="cargando-pagina chico"><span class="spinner"></span></div>';
+
+  let vencimientosPorDia = {};
+  try {
+    const res = await llamarApi(`${API.admin}?accion=calendario_licencias&anio=${ANIO_CALENDARIO_LICENCIAS}&mes=${MES_CALENDARIO_LICENCIAS}`, { method: 'GET' });
+    res.datos.forEach(p => {
+      const dia = parseInt(p.vencimiento.split('-')[2], 10);
+      if (!vencimientosPorDia[dia]) vencimientosPorDia[dia] = [];
+      vencimientosPorDia[dia].push(p);
+    });
+  } catch (e) {
+    grilla.innerHTML = '<p class="resumen-vacio">No se pudo cargar el calendario.</p>';
+    return;
+  }
+
+  grilla.innerHTML = '';
+  const primerDiaSemana = new Date(ANIO_CALENDARIO_LICENCIAS, MES_CALENDARIO_LICENCIAS - 1, 1).getDay();
+  const diasEnMes = new Date(ANIO_CALENDARIO_LICENCIAS, MES_CALENDARIO_LICENCIAS, 0).getDate();
+  const hoy = new Date();
+  const esMesActual = hoy.getFullYear() === ANIO_CALENDARIO_LICENCIAS && hoy.getMonth() + 1 === MES_CALENDARIO_LICENCIAS;
+
+  for (let i = 0; i < primerDiaSemana; i++) {
+    const celdaVacia = document.createElement('div');
+    celdaVacia.className = 'celda-calendario vacia';
+    grilla.appendChild(celdaVacia);
+  }
+
+  for (let dia = 1; dia <= diasEnMes; dia++) {
+    const celda = document.createElement('div');
+    celda.className = 'celda-calendario' + (esMesActual && dia === hoy.getDate() ? ' hoy' : '');
+    const profesionalesDia = vencimientosPorDia[dia] || [];
+    celda.innerHTML = `
+      <span class="numero-dia">${dia}</span>
+      ${profesionalesDia.map(p => `<div class="chip-vencimiento" title="${escaparHtml(p.nombre_completo)}">${escaparHtml((p.titulo || '') + ' ' + p.nombre_completo.split(' ').slice(-1)[0])}</div>`).join('')}
+    `;
+    grilla.appendChild(celda);
+  }
 }
 
 async function cargarReportesSede() {
@@ -3169,9 +3273,143 @@ async function montarVistaMiLegajo(contenido) {
           <div class="dato-box" style="grid-column: span 2;"><div class="etiqueta-dato">Licencia</div><div class="valor-dato">${venc}</div></div>
         </div>
         <p style="font-size:0.82rem; color:var(--tinta-suave); margin-top:8px;">Si necesitás corregir algún dato, comunicate con el administrador del sistema.</p>
+      </div>
+
+      <div class="panel" style="margin-top:18px;">
+        <div class="panel-titulo">Mi firma</div>
+        <p class="panel-subtitulo">Se inserta automáticamente al pie de cada legajo que exportes a PDF.</p>
+        <div id="contenedor-firma-actual" style="margin-bottom:16px;"></div>
+        <div class="tabs-firma" style="display:flex; gap:8px; margin-bottom:14px;">
+          <button class="btn btn-secundario btn-chico" id="tab-dibujar-firma" type="button">Dibujar</button>
+          <button class="btn btn-secundario btn-chico" id="tab-subir-firma" type="button">Subir imagen</button>
+        </div>
+        <div id="panel-dibujar-firma">
+          <canvas id="canvas-firma" width="500" height="160" class="canvas-firma"></canvas>
+          <div style="display:flex; gap:10px; margin-top:10px;">
+            <button class="btn btn-secundario btn-chico" id="btn-limpiar-firma" type="button">Limpiar</button>
+            <button class="btn btn-primario btn-chico" id="btn-guardar-firma-dibujada" type="button">Guardar firma</button>
+          </div>
+        </div>
+        <div id="panel-subir-firma" class="oculto">
+          <input type="file" id="input-subir-firma" accept="image/png,image/jpeg" style="margin-bottom:10px;">
+          <div>
+            <button class="btn btn-primario btn-chico" id="btn-guardar-firma-subida" type="button">Guardar firma</button>
+          </div>
+        </div>
+        ${l.firma_digital ? '<button class="btn btn-texto" id="btn-quitar-firma" type="button" style="margin-top:12px; color:var(--coral);">Quitar firma actual</button>' : ''}
       </div>`;
+
+    inicializarModuloFirma(l.firma_digital);
   } catch (e) {
     cont.innerHTML = '<p class="resumen-vacio">No se encontró tu legajo. Comunicate con el administrador del sistema.</p>';
+  }
+}
+
+function inicializarModuloFirma(firmaActual) {
+  const contActual = document.getElementById('contenedor-firma-actual');
+  if (firmaActual) {
+    contActual.innerHTML = `<div class="vista-firma-actual"><img src="${firmaActual}" alt="Tu firma actual"></div>`;
+  } else {
+    contActual.innerHTML = '<p class="resumen-vacio" style="margin:0;">Todavía no guardaste una firma.</p>';
+  }
+
+  const tabDibujar = document.getElementById('tab-dibujar-firma');
+  const tabSubir = document.getElementById('tab-subir-firma');
+  const panelDibujar = document.getElementById('panel-dibujar-firma');
+  const panelSubir = document.getElementById('panel-subir-firma');
+
+  tabDibujar.addEventListener('click', () => {
+    tabDibujar.classList.replace('btn-secundario', 'btn-primario');
+    tabSubir.classList.replace('btn-primario', 'btn-secundario');
+    panelDibujar.classList.remove('oculto');
+    panelSubir.classList.add('oculto');
+  });
+  tabSubir.addEventListener('click', () => {
+    tabSubir.classList.replace('btn-secundario', 'btn-primario');
+    tabDibujar.classList.replace('btn-primario', 'btn-secundario');
+    panelSubir.classList.remove('oculto');
+    panelDibujar.classList.add('oculto');
+  });
+  tabDibujar.classList.replace('btn-secundario', 'btn-primario');
+
+  // --- Dibujar con mouse o dedo ---
+  const canvas = document.getElementById('canvas-firma');
+  const ctx = canvas.getContext('2d');
+  ctx.lineWidth = 2.4;
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = '#1C2421';
+  let dibujando = false;
+  let huboTrazo = false;
+
+  function posicionDesdeEvento(e) {
+    const rect = canvas.getBoundingClientRect();
+    const escalaX = canvas.width / rect.width;
+    const escalaY = canvas.height / rect.height;
+    const punto = e.touches ? e.touches[0] : e;
+    return { x: (punto.clientX - rect.left) * escalaX, y: (punto.clientY - rect.top) * escalaY };
+  }
+  function empezarTrazo(e) {
+    e.preventDefault();
+    dibujando = true;
+    huboTrazo = true;
+    const p = posicionDesdeEvento(e);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+  }
+  function seguirTrazo(e) {
+    if (!dibujando) return;
+    e.preventDefault();
+    const p = posicionDesdeEvento(e);
+    ctx.lineTo(p.x, p.y);
+    ctx.stroke();
+  }
+  function terminarTrazo() { dibujando = false; }
+
+  canvas.addEventListener('mousedown', empezarTrazo);
+  canvas.addEventListener('mousemove', seguirTrazo);
+  canvas.addEventListener('mouseup', terminarTrazo);
+  canvas.addEventListener('mouseleave', terminarTrazo);
+  canvas.addEventListener('touchstart', empezarTrazo, { passive: false });
+  canvas.addEventListener('touchmove', seguirTrazo, { passive: false });
+  canvas.addEventListener('touchend', terminarTrazo);
+
+  document.getElementById('btn-limpiar-firma').addEventListener('click', () => {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    huboTrazo = false;
+  });
+
+  document.getElementById('btn-guardar-firma-dibujada').addEventListener('click', async () => {
+    if (!huboTrazo) { mostrarToast('Dibujá tu firma antes de guardar.', 'error'); return; }
+    await guardarFirma(canvas.toDataURL('image/png'));
+  });
+
+  // --- Subir imagen ---
+  document.getElementById('btn-guardar-firma-subida').addEventListener('click', async () => {
+    const input = document.getElementById('input-subir-firma');
+    const archivo = input.files && input.files[0];
+    if (!archivo) { mostrarToast('Elegí una imagen de tu firma.', 'error'); return; }
+    if (archivo.size > 1.5 * 1024 * 1024) { mostrarToast('La imagen pesa demasiado. Probá con una más liviana.', 'error'); return; }
+    const lector = new FileReader();
+    lector.onload = () => guardarFirma(lector.result);
+    lector.readAsDataURL(archivo);
+  });
+
+  const btnQuitar = document.getElementById('btn-quitar-firma');
+  if (btnQuitar) {
+    btnQuitar.addEventListener('click', async () => {
+      if (!confirm('¿Quitar tu firma actual? Los próximos PDF que exportes no la van a incluir.')) return;
+      await guardarFirma('');
+    });
+  }
+
+  async function guardarFirma(dataUrl) {
+    try {
+      await llamarApi(API.auth, { method: 'POST', body: JSON.stringify({ accion: 'guardar_firma_digital', firma: dataUrl }) });
+      mostrarToast(dataUrl ? 'Firma guardada correctamente.' : 'Firma eliminada.', 'exito');
+      irAVista('mi-legajo');
+    } catch (e) {
+      mostrarToast(e.message, 'error');
+    }
   }
 }
 

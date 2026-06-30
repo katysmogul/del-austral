@@ -80,6 +80,85 @@ if ($accion === 'historial') {
 // DASHBOARD DE ESTADÍSTICAS (GET ?accion=estadisticas)
 // Acotado siempre al profesional activo.
 // ------------------------------------------------------------
+// ------------------------------------------------------------
+// PACIENTES EN RIESGO DE ABANDONO (GET ?accion=riesgo_abandono)
+// Para cada paciente con 2+ sesiones, calcula su propio ritmo
+// habitual (promedio de días entre sesiones) y compara contra
+// cuánto pasó desde la última. Si ya pasó más del doble de su
+// ritmo normal, se marca en riesgo — el umbral se ajusta solo
+// a cada paciente, no es un número fijo igual para todos.
+//
+// Los pacientes con 0 o 1 sesión no tienen ritmo propio para
+// comparar, así que usan una regla de respaldo simple: si pasó
+// más de 60 días desde que se creó el legajo (o desde su única
+// sesión) sin ninguna sesión nueva, también se marcan.
+// ------------------------------------------------------------
+if ($accion === 'riesgo_abandono') {
+    requiereRolProfesional();
+    $profesionalActivoId = idProfesionalActivo();
+
+    $stmtPacientes = $pdo->prepare('SELECT id, nombre, apellido, creado_en FROM pacientes WHERE profesional_id = ?');
+    $stmtPacientes->execute([$profesionalActivoId]);
+    $pacientes = $stmtPacientes->fetchAll();
+
+    $stmtSesiones = $pdo->prepare('SELECT fecha_sesion FROM sesiones WHERE paciente_id = ? ORDER BY fecha_sesion ASC');
+
+    $hoy = new DateTime();
+    $enRiesgo = [];
+
+    foreach ($pacientes as $p) {
+        $stmtSesiones->execute([$p['id']]);
+        $fechas = array_column($stmtSesiones->fetchAll(), 'fecha_sesion');
+        $totalSesiones = count($fechas);
+
+        if ($totalSesiones >= 2) {
+            // Promedio de días entre sesiones consecutivas (ritmo propio).
+            $intervalos = [];
+            for ($i = 1; $i < $totalSesiones; $i++) {
+                $a = new DateTime($fechas[$i - 1]);
+                $b = new DateTime($fechas[$i]);
+                $intervalos[] = (int) $a->diff($b)->days;
+            }
+            $promedio = array_sum($intervalos) / count($intervalos);
+            if ($promedio < 1) $promedio = 1; // evita falsos positivos con sesiones el mismo día
+
+            $ultimaSesion = new DateTime($fechas[$totalSesiones - 1]);
+            $diasSinVerlo = (int) $ultimaSesion->diff($hoy)->days;
+
+            if ($diasSinVerlo > $promedio * 2) {
+                $enRiesgo[] = [
+                    'id' => $p['id'],
+                    'nombre' => $p['nombre'],
+                    'apellido' => $p['apellido'],
+                    'dias_sin_verlo' => $diasSinVerlo,
+                    'ritmo_habitual' => round($promedio),
+                    'motivo' => "Venía cada " . round($promedio) . " días aprox., y ya pasaron $diasSinVerlo sin una sesión nueva.",
+                ];
+            }
+        } else {
+            // Sin suficiente historia propia: regla de respaldo fija.
+            $referencia = $totalSesiones === 1 ? new DateTime($fechas[0]) : new DateTime($p['creado_en']);
+            $diasSinVerlo = (int) $referencia->diff($hoy)->days;
+            if ($diasSinVerlo > 60) {
+                $enRiesgo[] = [
+                    'id' => $p['id'],
+                    'nombre' => $p['nombre'],
+                    'apellido' => $p['apellido'],
+                    'dias_sin_verlo' => $diasSinVerlo,
+                    'ritmo_habitual' => null,
+                    'motivo' => $totalSesiones === 1
+                        ? "Una sola sesión registrada, hace $diasSinVerlo días."
+                        : "Legajo creado hace $diasSinVerlo días, sin ninguna sesión registrada.",
+                ];
+            }
+        }
+    }
+
+    usort($enRiesgo, fn($a, $b) => $b['dias_sin_verlo'] - $a['dias_sin_verlo']);
+    echo json_encode(['ok' => true, 'datos' => $enRiesgo]);
+    exit;
+}
+
 if ($accion === 'estadisticas') {
     requiereRolProfesional();
     $profesionalActivoId = idProfesionalActivo();
@@ -170,6 +249,35 @@ if ($accion === 'estadisticas') {
 // vence dentro de los próximos 7 días, para tener el aviso a
 // tiempo y no que la suspensión los agarre de sorpresa.
 // ------------------------------------------------------------
+// ------------------------------------------------------------
+// CALENDARIO DE LICENCIAS (GET ?accion=calendario_licencias)
+// Todos los profesionales activos con licencia por días que
+// vencen dentro del mes/año pedido, para mostrar en una vista
+// de calendario (no solo los que vencen en 7 días, como el
+// aviso del panel principal).
+// ------------------------------------------------------------
+if ($accion === 'calendario_licencias') {
+    requiereDesarrollador();
+    $anio = (int) ($_GET['anio'] ?? date('Y'));
+    $mes = (int) ($_GET['mes'] ?? date('n'));
+
+    $stmt = $pdo->prepare("
+        SELECT u.id, u.nombre_completo,
+               DATE_ADD(u.licencia_inicio, INTERVAL u.licencia_dias DAY) AS vencimiento,
+               pl.titulo, pl.especialidad
+        FROM usuarios u
+        LEFT JOIN profesionales_legajos pl ON pl.usuario_id = u.id
+        WHERE u.rol = 'profesional' AND u.activo = 1
+          AND u.licencia_dias IS NOT NULL AND u.licencia_inicio IS NOT NULL
+          AND YEAR(DATE_ADD(u.licencia_inicio, INTERVAL u.licencia_dias DAY)) = ?
+          AND MONTH(DATE_ADD(u.licencia_inicio, INTERVAL u.licencia_dias DAY)) = ?
+        ORDER BY vencimiento ASC
+    ");
+    $stmt->execute([$anio, $mes]);
+    echo json_encode(['ok' => true, 'datos' => $stmt->fetchAll()]);
+    exit;
+}
+
 if ($accion === 'licencias_por_vencer') {
     requiereDesarrollador();
     $stmt = $pdo->query("

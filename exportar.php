@@ -44,10 +44,16 @@ $stmtSesiones = $pdo->prepare('SELECT * FROM sesiones WHERE paciente_id = ? ORDE
 $stmtSesiones->execute([$id]);
 $sesiones = $stmtSesiones->fetchAll();
 
-$stmtNombreProf = $pdo->prepare('SELECT nombre_completo FROM usuarios WHERE id = ?');
+$stmtNombreProf = $pdo->prepare('
+    SELECT u.nombre_completo, pl.firma_digital
+    FROM usuarios u
+    LEFT JOIN profesionales_legajos pl ON pl.usuario_id = u.id
+    WHERE u.id = ?
+');
 $stmtNombreProf->execute([$profesionalActivoId]);
 $filaProf = $stmtNombreProf->fetch();
 $nombreProfesional = $filaProf ? $filaProf['nombre_completo'] : '';
+$firmaDigital = $filaProf ? ($filaProf['firma_digital'] ?? null) : null;
 
 function e($texto) {
     return htmlspecialchars($texto ?? '', ENT_QUOTES, 'UTF-8');
@@ -163,6 +169,12 @@ $edad = calcularEdadExport($paciente['fecha_nacimiento']);
     width: 260px;
     text-align: center;
   }
+  .imagen-firma {
+    max-width: 220px;
+    max-height: 80px;
+    margin: 0 auto 4px;
+    display: block;
+  }
   .linea-firma { border-top: 1.5px solid #1C2421; margin-bottom: 8px; }
   .nombre-firma { font-weight: 700; font-size: 0.92rem; }
   .aclaracion-firma { font-size: 0.75rem; color: #4A5650; margin-top: 2px; }
@@ -237,6 +249,9 @@ $edad = calcularEdadExport($paciente['fecha_nacimiento']);
 
   <?php if ($nombreProfesional): ?>
     <div class="bloque-firma">
+      <?php if ($firmaDigital): ?>
+        <img src="<?= e($firmaDigital) ?>" alt="Firma" class="imagen-firma">
+      <?php endif; ?>
       <div class="linea-firma"></div>
       <div class="nombre-firma"><?= e($nombreProfesional) ?></div>
       <div class="aclaracion-firma">Profesional responsable del seguimiento clínico</div>

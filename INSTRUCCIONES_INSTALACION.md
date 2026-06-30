@@ -1,216 +1,214 @@
 # Del Austral — Historial Clínico Digital
-### Guía de instalación en tu hosting cPanel
+### Guía de instalación y uso (versión final)
 
 ---
 
 ## ¿Ya tenés el sistema instalado? Empezá acá
 
-Si ya estabas usando una versión anterior con pacientes cargados, **no necesitás reinstalar todo desde cero**, pero esta actualización es la más grande hasta ahora: agrega sedes, varios profesionales con datos separados entre sí, y un nuevo nivel de acceso ("Desarrollador"). Seguí estos pasos en orden, sin saltar ninguno:
+Si ya estabas usando una versión anterior con pacientes cargados, **no necesitás reinstalar nada desde cero**. Solo tenés que correr las migraciones de base de datos que todavía no hayas corrido, y reemplazar los archivos por sus versiones nuevas.
 
-1. **Migrá la base de datos** (una sola vez, en este orden exacto): en phpMyAdmin, entrá a tu base de datos → pestaña **"SQL"** (no "Importar"):
-   - Si nunca corriste `migracion_v2.sql`, pegalo y ejecutalo (agrega citas, archivos adjuntos y plantillas).
-   - Si nunca corriste `migracion_v3.sql`, pegalo y ejecutalo (agrega usuarios con roles e historial de cambios).
-   - Si nunca corriste `migracion_v4.sql`, pegalo y ejecutalo (cambia el acceso de patrón dibujado a PIN numérico).
-   - Por último, pegá y ejecutá **`migracion_v5.sql`** (agrega sedes, separa los pacientes por profesional, agrega el rol Desarrollador y la confirmación de turnos por el paciente). Este script crea una "Sede principal" automática y te asigna ahí todo lo que ya tenías cargado, para no perder nada.
-   - Si nunca corriste `migracion_v6.sql`, pegalo y ejecutalo también (agrega el aviso de confirmaciones/cancelaciones de turno).
-   - Por último, pegá y ejecutá **`migracion_v7.sql`** (agrega a la papelera el profesional y la sede original de cada legajo eliminado, necesario para que el Desarrollador pueda recuperarlos).
-   - Si nunca corriste `migracion_v8.sql`, pegalo y ejecutalo también (agrega el aviso de "legajo recuperado de otro profesional" en la ficha del paciente).
-   - Por último, pegá y ejecutá **`migracion_v9.sql`** (el DNI pasa a ser único por profesional, no global — así dos profesionales distintos pueden tener cada uno un paciente con el mismo número de DNI, sin chocar entre sí).
-   - Ninguno de los cinco scripts borra pacientes, sesiones, citas ni adjuntos.
-2. **Subí la carpeta `adjuntos/`** completa (si todavía no la tenías) al mismo nivel que `index.html`.
-3. **Reemplazá** estos archivos por sus versiones nuevas: `index.html`, toda la carpeta `assets/`, toda la carpeta `api/`, `exportar.php`, y agregá el archivo nuevo **`confirmar_turno.php`**. No toques `config/config.php` — ya tiene tus credenciales y no cambió.
+### 1. Migrá la base de datos
 
-**Importante — cómo queda tu acceso después de esta migración.** Tu usuario profesional y tu PIN siguen funcionando igual que antes, pero el login cambió de forma: ahora antes de poner el PIN vas a tener que elegir una sede (te va a aparecer "Sede principal", que es la que creó la migración) y después tu nombre en la lista. Es un paso más, pero el PIN es el mismo de siempre.
+En phpMyAdmin, entrá a tu base de datos → pestaña **"SQL"** (no "Importar"), y corré en orden, una por una, las migraciones que todavía no hayas aplicado:
 
-**Sobre el nuevo rol Desarrollador.** Es un nivel de acceso por encima de todo, pensado para que solo vos (o quien administre el sistema técnicamente) pueda crear sedes nuevas y dar de alta o baja a profesionales y administrativas — así un médico no puede, por error o sin permiso, crear accesos para otros médicos. La migración **no te crea automáticamente** una clave de Desarrollador: la primera vez que entres después de migrar, vas a ver el botón "Soy el Desarrollador" en la pantalla de selección de sede. Tocalo y vas a poder crear esa clave (también de 4 números) en ese momento. Una vez creada, desde el panel de Desarrollador podés organizar mejor tus sedes y agregar a los demás profesionales si tenés más de uno.
+| Migración | Qué agrega |
+|---|---|
+| `migracion_v2.sql` | Citas, archivos adjuntos y plantillas de evolución |
+| `migracion_v3.sql` | Usuarios con roles e historial de cambios |
+| `migracion_v4.sql` | Cambia el acceso de patrón dibujado a PIN numérico |
+| `migracion_v5.sql` | Sedes, separación de pacientes por profesional, rol Desarrollador, confirmación de turnos por el paciente |
+| `migracion_v6.sql` | Aviso de confirmaciones/cancelaciones de turno |
+| `migracion_v7.sql` | Profesional y sede original en la papelera (para poder recuperar legajos) |
+| `migracion_v8.sql` | Aviso de "legajo recuperado de otro profesional" en la ficha del paciente |
+| `migracion_v9.sql` | El DNI pasa a ser único por profesional, no global |
+| `migracion_v10.sql` | Legajos completos de profesionales (datos personales, especialidad) y sistema de licencias |
+| `migracion_v11.sql` | Número de legajo automático (formato `LG-AAAA-NNN`) |
+| `migracion_v12.sql` | Firma digital del profesional |
 
-Si en tu consultorio **solo hay un profesional** (vos) y no necesitás nada de sedes múltiples ni separar pacientes entre médicos, no es obligatorio que uses el rol Desarrollador para el día a día — solo lo vas a necesitar la primera vez para crear la sede y, si querés, agregar una administrativa.
+Ninguna de estas migraciones borra pacientes, sesiones, citas ni adjuntos existentes. Si no estás seguro de cuáles ya corriste, no pasa nada grave en correr una de nuevo por error — la mayoría usa `ALTER TABLE ... ADD COLUMN`, que falla de forma segura (sin romper nada) si la columna ya existe.
+
+### 2. Reemplazá los archivos
+
+Subí las versiones nuevas de: `index.html`, toda la carpeta `assets/`, toda la carpeta `api/`, `exportar.php`, `confirmar_turno.php`, `version.json`, `manifest.json`, `sw.js`. **No toques** `config/config.php` — ya tiene tus credenciales reales y no cambia entre actualizaciones.
+
+### 3. Confirmá la actualización
+
+Entrá como Desarrollador (ver más abajo cómo) → pestaña **"Versión del sistema"** → tocá "Revisar ahora". Si todo quedó en verde, la actualización se aplicó correctamente.
 
 ---
 
 ## Instalación desde cero (primera vez)
 
-## 1. Crear la base de datos en cPanel
+### Si vas a usar hosting compartido (cPanel)
 
-1. Entrá a **cPanel** → buscá **"Bases de datos MySQL"**.
-2. En **"Crear nueva base de datos"**, escribí por ejemplo `legajos` y hacé clic en **Crear base de datos**.
-   - cPanel le va a agregar tu usuario de hosting como prefijo, por ejemplo: `tuusuario_legajos`. Anotá ese nombre completo.
-3. Bajá hasta **"Usuarios MySQL"** → **"Añadir nuevo usuario"**. Elegí un usuario (ej: `admin`) y una contraseña segura. Anotala. El nombre final va a ser algo como `tuusuario_admin`.
-4. Bajá hasta **"Añadir usuario a la base de datos"**. Seleccioná el usuario y la base que creaste, hacé clic en **Añadir**, y en la pantalla de privilegios marcá **"ALL PRIVILEGES"**. Guardá.
+**1. Crear la base de datos**
 
-Con esto ya tenés: nombre de base de datos, usuario y contraseña. Los vas a necesitar en el paso 3.
+1. Entrá a cPanel → **"Bases de datos MySQL"**.
+2. En "Crear nueva base de datos", escribí un nombre (ej: `legajos`) → Crear. cPanel le agrega tu usuario de hosting como prefijo (ej: `tuusuario_legajos`); anotá el nombre completo.
+3. Bajá a "Usuarios MySQL" → "Añadir nuevo usuario". Elegí usuario y contraseña, anotalos.
+4. Bajá a "Añadir usuario a la base de datos", asociá el usuario a la base, y marcá **"ALL PRIVILEGES"**.
 
----
+**2. Importar la estructura**
 
-## 2. Importar la estructura de tablas
+1. Abrí phpMyAdmin → tu base de datos → pestaña **"Importar"**.
+2. Elegí el archivo `database.sql` (incluido en este proyecto) → Importar.
+3. Deberías ver, a la izquierda, todas las tablas: `sedes`, `desarrollador`, `usuarios`, `usuarios_sedes`, `profesionales_legajos`, `obras_sociales`, `pacientes`, `sesiones`, `legajos_eliminados`, `citas`, `archivos_adjuntos`, `plantillas_evolucion`, `historial_cambios`.
 
-1. En cPanel, abrí **phpMyAdmin**.
-2. En la columna izquierda, hacé clic en la base de datos que creaste (`tuusuario_legajos`).
-3. Arriba, hacé clic en la pestaña **"Importar"**.
-4. Elegí el archivo **`database.sql`** (incluido en este proyecto) y hacé clic en **Continuar / Importar** abajo de todo.
-5. Deberías ver un mensaje de éxito y, a la izquierda, las tablas: `sedes`, `desarrollador`, `usuarios`, `usuarios_sedes`, `obras_sociales`, `pacientes`, `sesiones`, `legajos_eliminados`, `citas`, `archivos_adjuntos`, `plantillas_evolucion`, `historial_cambios`.
+**3. Configurar la conexión**
 
----
-
-## 3. Configurar la conexión
-
-1. Abrí el archivo **`config/config.php`** con el editor de texto que prefieras.
-2. Completá estas 4 líneas con tus datos reales del paso 1:
+Abrí `config/config.php` y completá con tus datos reales:
 
 ```php
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'tuusuario_legajos');
 define('DB_USER', 'tuusuario_admin');
 define('DB_PASS', 'tu_contraseña_real');
+define('APP_SECRET', 'escribí-aquí-cualquier-texto-largo-y-random-único');
 ```
 
-3. Cambiá también esta línea por cualquier texto largo e inventado (solo una vez, antes de subir el sitio):
+**4. Subir los archivos**
 
-```php
-define('APP_SECRET', 'escribí-aquí-cualquier-texto-largo-y-random-unico');
+Subí todo el contenido del proyecto (manteniendo la estructura) a `public_html` o la subcarpeta donde quieras publicar el sitio. La carpeta `adjuntos/` necesita permisos de escritura (755, o 775 si no alcanza).
+
+### Si vas a usar un VPS propio (Nginx + PHP-FPM + MariaDB)
+
+La instalación es la misma en esencia (base de datos, `config.php`, archivos), pero con algunas diferencias de configuración del servidor que vale la pena tener en cuenta:
+
+- **`DB_HOST`**: en algunos VPS, `'localhost'` falla con el error `SQLSTATE[HY000] [2002] No such file or directory` porque PHP intenta usar un socket Unix que no está donde se espera. Si te pasa esto, cambiá `DB_HOST` a `'127.0.0.1'` — eso fuerza la conexión por TCP y evita el problema.
+- **PHP-FPM debe estar corriendo**: verificá con `systemctl status php8.2-fpm` (ajustá la versión). Si el socket en `/run/php/` no existe, el sitio va a dar 404 o 502 en cualquier archivo `.php`.
+- **El virtual host de Nginx** necesita el bloque `location ~ \.php$` apuntando al socket correcto de PHP-FPM, sin comentar. Un ejemplo mínimo:
+
+```
+server {
+    server_name tudominio.com;
+    root /var/www/tu-proyecto;
+    index index.php index.html;
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.2-fpm.sock;
+    }
+}
 ```
 
-Guardá el archivo.
+- **Importar la base de datos** se hace igual que en cPanel, pero desde la terminal: `mysql -u tu_usuario -p tu_base < database.sql`.
+- Si el sitio carga pero da un error de PHP sobre una tabla que "no existe" (`Table 'tubase.desarrollador' doesn't exist`), es señal de que `database.sql` nunca se importó — la base existe pero está vacía.
 
----
+### Primer ingreso (cPanel o VPS, es igual)
 
-## 4. Subir los archivos
+1. Entrá a tu dominio. La primera vez te va a pedir crear la **clave de Desarrollador** (4 números) — guardala en un lugar seguro, separado de los PIN de los profesionales.
+2. Después, una pantalla te deja crear de una vez tu **primera sede** y tu **primer profesional** (con su legajo completo y PIN).
+3. Listo. Cerrá sesión y volvé a entrar: ahora vas a ver la pantalla normal — elegís sede, elegís tu nombre, ponés tu PIN.
 
-1. En cPanel, abrí **"Administrador de archivos"** (File Manager) o usá un cliente FTP (FileZilla, etc.).
-2. Entrá a la carpeta donde se publica tu sitio (normalmente `public_html`, o una subcarpeta si querés que viva en `tudominio.com/legajos`).
-3. Subí **todo el contenido** de esta carpeta del proyecto (manteniendo la estructura: `index.html`, `exportar.php`, `confirmar_turno.php`, `manifest.json`, `sw.js`, `version.json`, carpetas `api/`, `assets/` —incluida `assets/icons/`—, `config/`, `adjuntos/`).
-
-**Importante:** la carpeta `adjuntos/` necesita permisos de escritura para que el sitio pueda guardar los archivos que subas. Si al subir un archivo te da error de permisos, entrá al Administrador de archivos, clic derecho sobre la carpeta `adjuntos` → Permisos → poné **755** (o 775 si 755 no alcanza).
-
-**Sobre `config/`:** no necesita estar accesible desde el navegador directamente, pero no es grave si lo está porque PHP no expone el código fuente, solo lo ejecuta.
-
----
-
-## 5. Probar — primer ingreso
-
-1. Entrá a `https://tudominio.com/` (o la ruta donde lo subiste).
-2. La primera vez te va a pedir crear la **clave de Desarrollador** (4 números). Es la llave maestra para configurar el sistema — guardala en un lugar seguro, separado de los PIN de los profesionales.
-3. Después de crear la clave, te va a aparecer una pantalla para crear de una vez tu **primera sede** y tu **primer profesional** (con su propio PIN de 4 números). Completá los tres datos y tocá "Crear sede y profesional".
-4. Listo. Cerrá sesión y volvé a entrar: ahora vas a ver la pantalla normal de acceso — elegís la sede, elegís tu nombre, y poné tu PIN.
-
-Si en algún momento necesitás agregar otra sede, otro profesional, o una administrativa, entrá con la clave de Desarrollador (botón "Soy el Desarrollador" en la pantalla de selección de sede) y gestionalo desde ahí.
-
----
-
-## ¿Qué hace cada parte del sistema?
-
-- **Crear legajo**: registra un paciente nuevo con sus datos, obra social y, opcionalmente, las primeras sesiones. El paciente queda asociado automáticamente a tu usuario (solo vos lo vas a poder ver) y a la sede donde iniciaste sesión.
-- **Acceder a legajos**: buscá por DNI, nombre y apellido, fecha de atención, obra social, o **sede**. Desde la ficha del paciente podés:
-  - **Editar sus datos** en cualquier momento con el botón "Editar datos".
-  - **Cambiarlo de sede** con el botón "Cambiar de sede", si el paciente empezó a atenderse en otro lugar.
-  - **Agregar, editar o eliminar sesiones**: cada sesión de la línea de tiempo tiene sus propios botones de lápiz (editar) y tacho (eliminar), por si te equivocaste al escribir algo.
-  - Usar una **plantilla de evolución** al agregar una sesión (texto reutilizable, propio de cada profesional — no se comparten entre médicos distintos).
-  - **Agendar y gestionar citas** del paciente (marcarlas como atendidas, ausentes o cancelarlas). El sistema no te deja agendar dos turnos a la misma fecha y hora para el mismo profesional, sin importar en qué sede sea.
-  - **Enviar un recordatorio por WhatsApp** con un mensaje pre-armado que incluye un link para que el paciente confirme o cancele el turno con un toque, sin necesidad de loguearse a nada.
-  - **Copiar el link de confirmación** del turno (ícono de "copiar"), por si preferís mandarlo por otro medio que no sea WhatsApp.
-  - **Subir y descargar archivos adjuntos** (PDF o imágenes), hasta 15 MB cada uno.
-  - **Exportar el legajo completo a PDF**, con tu nombre y título como firma al final.
-- **Agenda**: calendario mensual completo con tus citas. Desde el panel principal también ves un resumen de "próximas citas" de los próximos 7 días.
-- **"Hoy tenés X consultas"**: en el panel principal, una franja te muestra cuántas consultas de hoy todavía no llegó su hora y a qué hora es la próxima. El número baja automáticamente a medida que pasan las horas agendadas, sin que tengas que tocar nada — no depende de que marques "Atendida".
-- **Aviso de confirmaciones y cancelaciones**: cuando un paciente confirma o cancela su turno desde el link que le mandaste, en el panel principal te aparece un cartel con la cantidad de novedades. Tocalo para ver el detalle (quién confirmó, quién canceló) y marcarlas como vistas.
-- **Pacientes sin sesiones recientes** y **próximos cumpleaños**: resúmenes en el panel principal.
-- **Estadísticas**: pacientes totales, sesiones del mes, citas por estado, distribución por obra social — siempre de **tus propios pacientes**, no de otros profesionales. Desde ahí también podés tocar "Descargar backup de todos mis legajos" para bajar un archivo con todos tus pacientes, sus sesiones, citas y la lista de adjuntos — útil como respaldo propio, fuera de la base de datos.
-- **Eliminar legajos**: el legajo desaparece de las búsquedas normales, pero queda guardado completo en la base histórica.
-- **Obras sociales**: catálogo compartido entre todos los profesionales (no es información de un paciente puntual, así que no hace falta separarlo).
-- **Instalar el sistema como app**: tanto en celular como en computadora, podés "instalar" Del Austral para que tenga su propio ícono y se abra como una app, sin pasar por el navegador cada vez. Ver la sección [Instalar como app](#instalar-como-app) más abajo.
-- **Verificación de versión** (solo Desarrollador): una pestaña en el panel del Desarrollador que revisa si los archivos del servidor coinciden con la última actualización que te entregamos, para detectar de un vistazo si algo quedó con una versión vieja después de subir archivos nuevos.
-- **Reportes por sede** (solo Desarrollador): otra pestaña del panel que muestra, sede por sede, cuántos profesionales y administrativas atienden ahí, cuántos pacientes hay en total, y la actividad (sesiones y citas) de este mes. Útil para tener una foto general si el consultorio crece a varias sucursales.
+Si en algún momento necesitás agregar otra sede, otro profesional o una administrativa, entrá con la clave de Desarrollador (ver la sección siguiente sobre cómo acceder) y gestionalo desde el panel.
 
 ---
 
 ## Sedes, profesionales y roles
 
-Este sistema soporta un consultorio con **varias sedes** y **varios profesionales**, donde cada profesional ve únicamente sus propios pacientes — ni siquiera otro profesional de la misma sede puede verlos.
+El sistema soporta varias sedes y varios profesionales, donde cada profesional ve únicamente sus propios pacientes — ni siquiera otro profesional de la misma sede puede verlos.
 
 ### Los tres niveles de acceso
 
 | | **Desarrollador** | **Profesional** | **Administrativa** |
 |---|---|---|---|
-| Crear/desactivar sedes | Sí | No | No |
-| Crear/desactivar usuarios | Sí | No | No |
+| Crear/renombrar/desactivar sedes | Sí | No | No |
+| Crear/editar/desactivar usuarios | Sí | No | No |
+| Gestionar licencias de profesionales | Sí | No | No |
 | Ver pacientes y agenda | No | Sí (los propios) | Sí (de un profesional elegido) |
 | Crear pacientes (contacto) | No | Sí | Sí |
-| Ver motivo, patología, síntomas, sesiones | No | Sí | **No** |
+| Ver motivo, patología, síntomas, sesiones | No | Sí | No |
 | Editar / eliminar legajos, sesiones | No | Sí | No |
 | Exportar PDF, ver estadísticas e historial | No | Sí | No |
 
-- **El Desarrollador** entra por una puerta separada (botón "Soy el Desarrollador" en la pantalla de acceso) con su propia clave de 4 números. No ve ningún paciente — su única función es organizar sedes y dar de alta o baja a las personas que sí van a usar el sistema día a día.
-- **El profesional** entra eligiendo su sede y su nombre, y después su PIN. Ve y gestiona solo los pacientes que él mismo creó (o que el Desarrollador le haya dejado asociados).
-- **La administrativa** entra de la misma forma, pero además tiene que indicar **a nombre de qué profesional** está trabajando en ese momento (si en la sede hay varios médicos, esto evita que el sistema confunda a quién pertenecen los pacientes que ella gestiona). Ve la agenda y los datos de contacto de los pacientes de ese profesional, pero nunca el contenido clínico. Una vez adentro, en la topbar y en el cartel de bienvenida aparece el nombre del profesional (no el de la administrativa) — así no se "mezclan" visualmente las cuentas. Internamente el sistema sigue sabiendo que fue ella quien hizo cada acción, para que el historial de cambios siga siendo preciso.
+- **El Desarrollador** entra por un acceso discreto, separado del login normal (ver más abajo), con su propia clave de 4 números. No ve ningún paciente — su función es organizar sedes, dar de alta o baja a las personas que usan el sistema, y gestionar sus licencias de acceso.
+- **El profesional** entra eligiendo su sede y su nombre, y después su PIN. Ve y gestiona solo los pacientes que él mismo creó (o que el Desarrollador le haya asignado).
+- **La administrativa** entra igual, pero además indica a nombre de qué profesional está trabajando ese momento. Ve agenda y contacto, nunca contenido clínico.
+
+### Cómo acceder como Desarrollador
+
+La pantalla de acceso normal no menciona que existe un rol de Desarrollador, a propósito. En la esquina superior derecha de la pantalla hay un botón pequeño y discreto que dice **"Mantenimiento"** — tocalo para ingresar tu clave de Desarrollador.
 
 ### Gestionar sedes y usuarios (como Desarrollador)
 
-Desde el panel de Desarrollador (al que entrás con tu clave) tenés varias pestañas:
+Desde el panel de Desarrollador tenés estas pestañas:
 
-- **Sedes**: crear sedes nuevas o desactivar las que ya no usás.
-- **Usuarios**: agregar profesionales o administrativas, elegir en qué sede(s) atienden, y asignarles su PIN. También podés quitarles el acceso cuando haga falta (no se borra su historial, solo deja de poder entrar), o gestionar a qué sedes pertenece cada uno.
-- **Historial de cambios**: acá el Desarrollador ve **todo** el historial de todos los profesionales (es el único rol con esa vista global; cada profesional, desde su propio panel, solo ve el historial de sus propios pacientes).
+- **Sedes**: crear sedes nuevas, renombrarlas (el cambio se refleja automáticamente en todos los legajos existentes, sin perder ni mover nada — pacientes y profesionales se vinculan por un identificador interno, no por el texto del nombre), o desactivarlas.
+- **Usuarios**: agregar profesionales (con su legajo completo: título, nombre, DNI, fecha y lugar de nacimiento, especialidad, contacto, sede y licencia) o administrativas (alta simple). Cada profesional recibe un número de legajo automático con formato `LG-2026-001`. Desde acá también podés editar el legajo de un profesional ya creado, gestionar su licencia (activarla por 7 a 120 días o indeterminada, pausarla o prohibirla), cambiar su PIN sin recrearlo, restaurar el acceso de alguien desactivado, y buscar por nombre, DNI o número de legajo en un único buscador.
+- **Historial de cambios**: el Desarrollador ve todo el historial de todos los profesionales, con un filtro opcional por tipo de entidad.
 - **Versión del sistema**: compara los archivos del servidor contra la última actualización entregada.
 - **Reportes por sede**: resumen de cada sede (profesionales, pacientes, actividad del mes).
-- **Papelera**: ver los legajos que eliminó cualquier profesional y, si hace falta, recuperarlos asignándolos a otro profesional de la misma sede — por ejemplo, si un profesional deja de trabajar en una sede y otro va a continuar atendiendo a sus pacientes. Para usarla: elegí primero la sede, después el profesional que eliminó el legajo, y vas a ver su papelera. Al tocar "Recuperar" en un paciente, elegís a cuál de los profesionales de esa misma sede se lo querés asignar — el legajo vuelve a aparecer activo, con todas sus sesiones, a nombre del profesional que elegiste. Si lo asignaste a alguien distinto del profesional que lo tenía antes, le va a quedar un aviso permanente en la ficha del paciente, indicando de qué profesional venía ese legajo.
-- **Legajos huérfanos**: distinto de la papelera — acá ves los pacientes que **siguen activos** (nunca se eliminaron) de un profesional al que le **quitaste el acceso** ("Quitar acceso" en la pestaña Usuarios). Como ese profesional ya no puede entrar al sistema, sus pacientes quedarían sin nadie que los gestione, a menos que los transfieras a otro profesional de la misma sede desde esta pestaña. Funciona igual que la papelera: elegís el profesional desactivado, ves sus pacientes, y tocás "Transferir" para asignárselos a otro.
+- **Papelera**: recuperar legajos eliminados, asignándolos a otro profesional de la misma sede donde estaban.
+- **Legajos huérfanos**: transferir pacientes activos de un profesional desactivado a otro de la misma sede.
+- **Calendario de licencias**: vista de calendario mensual con cada profesional marcado en el día exacto en que vence su licencia, para planificar renovaciones con anticipación. En la pestaña Sedes también aparece un aviso si alguna licencia vence dentro de los próximos 7 días.
 
 ---
 
-## Instalar como app
+## ¿Qué hace cada parte del sistema (vista del profesional)?
 
-Del Austral se puede "instalar" tanto en celular como en computadora, para que tenga su propio ícono y se abra como una aplicación, sin las barras del navegador. No es una app de tienda (no pasa por Google Play ni App Store) — se instala directo desde el navegador, y funciona exactamente igual que la versión web (necesita conexión a internet, no funciona sin ella).
+- **Crear legajo**: registra un paciente con sus datos, obra social y, opcionalmente, las primeras sesiones.
+- **Acceder a legajos**: buscá por DNI, nombre, fecha, obra social o sede. Desde la ficha podés editar datos, cambiar de sede, agregar/editar/eliminar sesiones, usar plantillas de evolución, agendar citas, mandar recordatorio de turno por WhatsApp, subir/descargar adjuntos, y exportar a PDF.
+- **Firma digital**: desde "Mi legajo" → "Mi firma", podés dibujarla con el mouse o el dedo, o subir una foto de tu firma real. Una vez guardada, se inserta automáticamente al pie de cada legajo que exportes a PDF.
+- **Agenda**: calendario mensual con tus citas, más un resumen de próximas citas en el panel principal.
+- **"Hoy tenés X consultas"**: franja en el panel principal con la cantidad de consultas de hoy que todavía no llegó su hora.
+- **Aviso de confirmaciones y cancelaciones**: cartel con la cantidad de novedades cuando un paciente confirma o cancela desde el link de WhatsApp.
+- **Pacientes que podrían estar abandonando el seguimiento**: en "Estadísticas", una sección compara cuánto pasó desde la última sesión de cada paciente contra su propio ritmo habitual de visitas — si un paciente que solía venir cada 2 semanas ya lleva más de un mes sin sesión, aparece marcado ahí. Para pacientes con poca historia, usa una regla de respaldo de 60 días sin actividad.
+- **Pacientes sin sesiones recientes** y **próximos cumpleaños**: resúmenes en el panel principal.
+- **Estadísticas**: pacientes totales, sesiones del mes, citas por estado, distribución por obra social, y un botón para descargar un backup completo de todos tus legajos.
+- **Eliminar legajos**: queda guardado en la papelera, recuperable más adelante.
+- **Mi legajo**: tus propios datos profesionales en modo de solo lectura, con tu número de legajo y el estado de tu licencia.
 
-**En Android (Chrome):**
-1. Entrá al sitio normalmente.
-2. Va a aparecer un cartelito abajo ofreciendo "Instalar app", o podés tocar los tres puntos (⋮) arriba a la derecha → **"Instalar app"** o **"Agregar a pantalla principal"**.
-3. Confirmá. Va a aparecer el ícono de Del Austral entre tus apps, como cualquier otra.
+---
 
-**En iPhone/iPad (Safari):**
-1. Entrá al sitio normalmente.
-2. Tocá el botón de compartir (el cuadrado con la flecha hacia arriba).
-3. Buscá **"Agregar a pantalla de inicio"** y confirmá.
+## Instalar como app (PWA)
 
-**En computadora (Chrome o Edge):**
-1. Entrá al sitio.
-2. En la barra de direcciones, a la derecha, va a aparecer un ícono de instalación (una pantalla con una flecha). Hacé clic ahí, o desde el menú (⋮) buscá **"Instalar Del Austral"**.
-3. Se va a abrir en su propia ventana, con su propio ícono en el escritorio o en la barra de tareas.
+Del Austral se puede "instalar" en celular o computadora para que tenga su propio ícono y se abra sin las barras del navegador. No pasa por ninguna tienda de apps.
 
-Si no te aparece la opción de instalar, puede ser que el sitio no esté funcionando bajo HTTPS (revisá que tengas el candadito en la barra de direcciones; si no, activá el AutoSSL de cPanel mencionado en la sección de seguridad).
+- **Android (Chrome)**: menú → "Instalar app" o "Agregar a pantalla principal".
+- **iPhone/iPad (Safari)**: botón de compartir → "Agregar a pantalla de inicio".
+- **Computadora (Chrome/Edge)**: ícono de instalación en la barra de direcciones, o menú → "Instalar Del Austral".
+
+Si no aparece la opción de instalar, confirmá que el sitio funcione con HTTPS.
 
 ---
 
 ## Verificación de versión (para el Desarrollador)
 
-Cada vez que te entreguemos una actualización, vas a recibir junto con los archivos un **`version.json`** nuevo. Subilo siempre junto con el resto — es el que le dice al sistema "esta es la versión correcta esperada".
+Cada actualización viene con un `version.json` nuevo — subilo siempre junto con el resto. Para revisar si todo quedó bien actualizado: entrá como Desarrollador → pestaña "Versión del sistema" → "Revisar ahora". Un cartel verde confirma que todo coincide; uno rojo señala exactamente qué archivo quedó con una versión vieja.
 
-Para revisar si todo quedó bien actualizado:
-
-1. Entrá como Desarrollador.
-2. En el panel, pestaña **"Versión del sistema"**.
-3. Vas a ver un cartel verde si todo coincide con la última actualización, o uno rojo si algún archivo quedó con una versión vieja — con el detalle de cuál archivo específico tiene el problema.
-
-Esto compara el contenido real de los archivos del servidor contra lo que te entregamos, así que es la forma más confiable de confirmar una actualización sin tener que ir abriendo archivo por archivo en el editor de cPanel (como tuvimos que hacer alguna vez antes de tener esta pantalla).
+Un problema común: si pegás el contenido de un archivo a mano dentro del editor de texto del hosting (en vez de subir el archivo real), a veces se cambian detalles invisibles que alteran el archivo sin que se note, y la verificación marca "versión vieja" aunque se vea idéntico. Si pasa esto, borrá el archivo del servidor y subilo de nuevo con el botón de "Cargar/Subir", en vez de copiar y pegar texto.
 
 ---
 
 ## Si falla la subida de archivos adjuntos
 
-El sistema permite adjuntar PDF o imágenes de hasta 15 MB por archivo, pero ese límite también depende de la configuración propia de PHP en tu hosting (`upload_max_filesize` y `post_max_size`). Si tu hosting tiene un límite más bajo (algo común en planes básicos, donde el default suele ser 2 MB u 8 MB), vas a ver un mensaje claro indicando el límite real del servidor.
+El sistema permite adjuntar PDF o imágenes de hasta 15 MB, pero ese límite también depende de la configuración de PHP en tu hosting (`upload_max_filesize` y `post_max_size`). Si tu hosting tiene un límite más bajo, vas a ver un mensaje claro con el límite real del servidor. Para subirlo: en cPanel, "MultiPHP INI Editor"; en VPS, editá el `php.ini` y reiniciá PHP-FPM.
 
-Para subirlo, en cPanel buscá **"Seleccionar versión de PHP"** o **"MultiPHP INI Editor"** → ahí podés aumentar `upload_max_filesize` y `post_max_size` a, por ejemplo, 20M cada uno (siempre poné `post_max_size` igual o más grande que `upload_max_filesize`). Si no encontrás esa opción, contactá al soporte de tu hosting y pedíselo directamente.
+---
+
+## Sincronizar el servidor con un repositorio Git (opcional, para VPS)
+
+Si tenés tu propio Gitea, GitHub u otro servidor Git, podés mantener un respaldo automático con historial de cada cambio en el servidor:
+
+1. Convertí la carpeta del proyecto en un repositorio git y conectalo con tu servidor remoto.
+2. Asegurate de que `config/config.php` esté en el `.gitignore` (ya viene así) para no subir tus credenciales reales nunca.
+3. Usá un token de acceso personal en vez de tu contraseña real.
+4. Un script simple en cron, corriendo periódicamente, puede hacer commit y push solo si detecta cambios reales.
+
+Esto es opcional y pensado para quien ya tiene experiencia con git.
 
 ---
 
 ## Sobre la seguridad de los datos
 
-Esto maneja datos clínicos de pacientes, así que algunas recomendaciones:
-
-- Activá el **certificado SSL gratuito** de tu cPanel (sección "SSL/TLS Status" → "Run AutoSSL") para que el sitio funcione con `https://` y no `http://`.
-- Hacé backups periódicos de la base de datos desde phpMyAdmin, y también de la carpeta `adjuntos/` (los archivos subidos no están en la base de datos).
-- Los PIN y la clave de Desarrollador se guardan encriptados (hash), nunca en texto plano.
-- El aislamiento entre profesionales no depende solo de la pantalla: está aplicado en el servidor, así que aunque alguien intente forzar una URL con el ID de un paciente de otro profesional, el sistema no lo va a mostrar.
-- La carpeta `adjuntos/` tiene un archivo `.htaccess` que impide que cualquier archivo subido se ejecute como código.
-- El link de confirmación de turno (`confirmar_turno.php`) es público a propósito —es lo que permite que el paciente confirme sin loguearse— pero solo expone los datos de esa cita puntual (fecha, hora, motivo), nunca información clínica. Cada link es único e impredecible (un código largo generado al azar), así que no se puede adivinar el de otro paciente.
+- Activá el certificado SSL (AutoSSL en cPanel, o Certbot en VPS).
+- Hacé backups periódicos de la base de datos y de la carpeta `adjuntos/`.
+- Los PIN y la clave de Desarrollador se guardan encriptados, nunca en texto plano.
+- El aislamiento entre profesionales está aplicado en el servidor, no solo en la pantalla.
+- La carpeta `adjuntos/` tiene un `.htaccess` que impide ejecutar archivos subidos como código.
+- El link de confirmación de turno es público a propósito, pero solo expone datos de esa cita puntual, y cada link es único e impredecible.
+- El acceso de Desarrollador no se anuncia en la pantalla de login.
 
 Cualquier ajuste que necesites lo podemos ir sumando.

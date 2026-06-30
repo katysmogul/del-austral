@@ -1,17 +1,17 @@
 {
-  "version": "v22",
+  "version": "v23",
   "fecha": "2026-06-30",
-  "descripcion": "Arregla el texto de licencia en Mi legajo, que se cortaba mal cuando decía 'Sin vencimiento (indeterminada)'",
+  "descripcion": "Entrega final: firma digital (dibujada o subida) en el PDF exportado, detección de pacientes en riesgo de abandono ajustada por su propio ritmo de visitas, y calendario mensual de vencimientos de licencia para el Desarrollador",
   "archivos_criticos": {
-    "index.html": "e3c7585d7aeeffa597d277247d77e07e",
-    "assets/js/app.js": "3c5ba080ea3c22a6a69a73f3ae30c69d",
-    "assets/css/estilos.css": "60de9e4c4073cd4a57c0c081577d0d25",
-    "api/auth.php": "702ce82cdca08bef95a10e0821c4dc52",
+    "index.html": "5477853e2519ab620dbd61f81e60a537",
+    "assets/js/app.js": "ea6de159fd836d8b09fc4c424e51966a",
+    "assets/css/estilos.css": "9091b4865695cfa01fcbfd9758ad954d",
+    "api/auth.php": "6f7e7013eec4f93a482981668ff6e754",
     "api/citas.php": "7622c3facffd9fb671fa63494be56124",
     "api/pacientes.php": "df7de793317e8229120119a5050c44c2",
     "api/adjuntos.php": "8da3f85e26239072953298c60dcb5540",
-    "api/admin.php": "15086c71878647214eedfc18757a4dd1",
+    "api/admin.php": "b0f9dbf5039e62dc5c0692268ce46613",
     "confirmar_turno.php": "ad6a798a41a594bb5dcc797295222cce",
-    "exportar.php": "ae88278f3ea445afb0394ef514fe1d83"
+    "exportar.php": "a10f27743c3af92dcf8fa3f364efdae9"
   }
 }

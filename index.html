@@ -690,6 +690,7 @@
     <button class="tab-busqueda" data-tab-config="reportes">Reportes por sede</button>
     <button class="tab-busqueda" data-tab-config="papelera">Papelera</button>
     <button class="tab-busqueda" data-tab-config="huerfanos">Legajos huérfanos</button>
+    <button class="tab-busqueda" data-tab-config="calendario">Calendario de licencias</button>
   </div>
 
   <div id="panel-config-sedes">
@@ -789,6 +790,26 @@
         <select id="select-profesional-huerfano"><option value="">Elegí un profesional…</option></select>
       </div>
       <div id="lista-huerfanos-dev" class="lista-resultados"></div>
+    </div>
+  </div>
+
+  <div id="panel-config-calendario" class="oculto">
+    <div class="panel">
+      <div class="panel-titulo">Calendario de vencimientos de licencia</div>
+      <p class="panel-subtitulo">Cada día marcado muestra qué profesionales vencen ese día, para planificar renovaciones con anticipación.</p>
+      <div class="encabezado-calendario-licencias">
+        <button class="btn-icono" id="btn-mes-anterior-licencias" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <span id="titulo-mes-licencias" class="titulo-mes-calendario"></span>
+        <button class="btn-icono" id="btn-mes-siguiente-licencias" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="grilla-dias-semana">
+        <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+      </div>
+      <div id="grilla-calendario-licencias" class="grilla-calendario-licencias"></div>
     </div>
   </div>
 </template>

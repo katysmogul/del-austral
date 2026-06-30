@@ -1560,6 +1560,119 @@ a { color: var(--salvia); text-decoration: none; }
 /* ------------------------------------------------------------
    Aviso de licencias por vencer (panel Desarrollador)
    ------------------------------------------------------------ */
+/* ------------------------------------------------------------
+   Firma digital (panel Mi legajo)
+   ------------------------------------------------------------ */
+.canvas-firma {
+  width: 100%;
+  max-width: 500px;
+  height: 160px;
+  background: var(--crema);
+  border: 1.5px dashed var(--linea);
+  border-radius: var(--radio-chico);
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.vista-firma-actual {
+  display: inline-block;
+  background: var(--crema);
+  border: 1.5px solid var(--linea);
+  border-radius: var(--radio-chico);
+  padding: 12px 18px;
+}
+.vista-firma-actual img {
+  max-width: 220px;
+  max-height: 80px;
+  display: block;
+}
+
+.fila-riesgo-abandono {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--linea);
+}
+.fila-riesgo-abandono:last-child { border-bottom: none; }
+.fila-riesgo-abandono:hover .nombre { color: var(--salvia-oscuro); }
+
+/* ------------------------------------------------------------
+   Calendario de vencimientos de licencia
+   ------------------------------------------------------------ */
+.encabezado-calendario-licencias {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  margin-bottom: 16px;
+}
+.titulo-mes-calendario {
+  font-family: var(--fuente-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--tinta);
+  min-width: 180px;
+  text-align: center;
+}
+
+.grilla-dias-semana {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+}
+
+.grilla-calendario-licencias {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+}
+
+.celda-calendario {
+  min-height: 76px;
+  border-radius: var(--radio-chico);
+  background: var(--crema);
+  border: 1px solid var(--linea);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  overflow: hidden;
+}
+.celda-calendario.vacia {
+  background: none;
+  border: none;
+}
+.celda-calendario.hoy {
+  border-color: var(--salvia);
+  background: var(--salvia-claro);
+}
+.numero-dia {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--tinta-suave);
+}
+.chip-vencimiento {
+  background: var(--coral-claro);
+  color: var(--coral);
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 600px) {
+  .celda-calendario { min-height: 56px; padding: 4px; }
+  .grilla-dias-semana { font-size: 0.62rem; }
+  .chip-vencimiento { font-size: 0.6rem; }
+}
+
 .aviso-licencias-vencer {
   display: flex;
   align-items: flex-start;

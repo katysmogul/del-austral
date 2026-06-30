@@ -828,6 +828,48 @@ if ($accion === 'crear_usuario') {
 // los datos personales y mantiene sincronizado el nombre que
 // se muestra en el login (nombre_completo de usuarios).
 // ------------------------------------------------------------
+// ------------------------------------------------------------
+// GUARDAR FIRMA DIGITAL — el propio profesional sube o dibuja
+// su firma (PNG en base64), que se inserta automáticamente al
+// pie de cada PDF que exporte de sus pacientes.
+// ------------------------------------------------------------
+if ($accion === 'guardar_firma_digital') {
+    requiereSesion();
+    if (($_SESSION['rol'] ?? '') !== 'profesional') {
+        http_response_code(403);
+        echo json_encode(['ok' => false, 'error' => 'Solo un profesional puede guardar su propia firma.']);
+        exit;
+    }
+    $usuarioId = (int) $_SESSION['usuario_id'];
+    $firmaBase64 = $input['firma'] ?? '';
+
+    if ($firmaBase64 === '') {
+        // Permite borrar la firma actual mandando un valor vacío.
+        $pdo->prepare('UPDATE profesionales_legajos SET firma_digital = NULL WHERE usuario_id = ?')->execute([$usuarioId]);
+        echo json_encode(['ok' => true]);
+        exit;
+    }
+
+    if (!preg_match('/^data:image\/(png|jpeg|jpg);base64,([A-Za-z0-9+\/=]+)$/', $firmaBase64, $coincidencia)) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'El archivo tiene que ser una imagen PNG o JPEG válida.']);
+        exit;
+    }
+
+    // Límite de ~2MB en base64 (≈1.5MB de imagen real), de sobra
+    // para una firma y evita que alguien guarde algo gigante.
+    if (strlen($firmaBase64) > 2 * 1024 * 1024) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'La imagen de la firma es demasiado grande.']);
+        exit;
+    }
+
+    $pdo->prepare('UPDATE profesionales_legajos SET firma_digital = ? WHERE usuario_id = ?')->execute([$firmaBase64, $usuarioId]);
+    registrarAuditoria($pdo, 'editar', 'usuario', $usuarioId, 'Actualizó su firma digital.');
+    echo json_encode(['ok' => true]);
+    exit;
+}
+
 if ($accion === 'editar_legajo_profesional') {
     requiereDesarrollador();
     $usuarioId = (int) ($input['usuario_id'] ?? 0);
