@@ -207,5 +207,74 @@ if ($metodo === 'GET' && $accion === 'listar_derivaciones') {
     exit;
 }
 
+// ------------------------------------------------------------
+// ELIMINAR RESUMEN DE DERIVACIÓN (a papelera, recuperable por
+// el Desarrollador) — POST ?accion=eliminar_derivacion
+// ------------------------------------------------------------
+if ($metodo === 'POST' && $accion === 'eliminar_derivacion') {
+    $d = json_decode(file_get_contents('php://input'), true);
+    $id = $d['id'] ?? 0;
+
+    $stmt = $pdo->prepare('SELECT * FROM resumenes_derivacion WHERE id = ? AND profesional_id = ?');
+    $stmt->execute([$id, $profesionalActivoId]);
+    $derivacion = $stmt->fetch();
+    if (!$derivacion) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Ese resumen no existe o no te pertenece.']);
+        exit;
+    }
+
+    $pdo->beginTransaction();
+    try {
+        $stmtArchivo = $pdo->prepare('
+            INSERT INTO derivaciones_eliminadas (derivacion_id_original, profesional_id_original, sede_id_original, nombre_completo, dni, datos_json)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ');
+        $stmtArchivo->execute([
+            $id,
+            $derivacion['profesional_id'],
+            $derivacion['sede_id'],
+            $derivacion['nombre_completo'],
+            $derivacion['dni'],
+            json_encode($derivacion, JSON_UNESCAPED_UNICODE),
+        ]);
+
+        $pdo->prepare('DELETE FROM resumenes_derivacion WHERE id = ?')->execute([$id]);
+
+        $pdo->commit();
+        registrarAuditoria($pdo, 'eliminar', 'derivacion', $id, "Se eliminó el resumen de derivación de \"{$derivacion['nombre_completo']}\".");
+        echo json_encode(['ok' => true, 'mensaje' => 'Resumen eliminado. Queda resguardado en la papelera.']);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'No se pudo eliminar el resumen.']);
+    }
+    exit;
+}
+
+// ------------------------------------------------------------
+// ELIMINAR PARA SIEMPRE UN RESUMEN DE DERIVACIÓN — borrado
+// irreversible, sin pasar por papelera.
+// POST ?accion=eliminar_derivacion_definitivo
+// ------------------------------------------------------------
+if ($metodo === 'POST' && $accion === 'eliminar_derivacion_definitivo') {
+    $d = json_decode(file_get_contents('php://input'), true);
+    $id = $d['id'] ?? 0;
+
+    $stmt = $pdo->prepare('SELECT nombre_completo FROM resumenes_derivacion WHERE id = ? AND profesional_id = ?');
+    $stmt->execute([$id, $profesionalActivoId]);
+    $derivacion = $stmt->fetch();
+    if (!$derivacion) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Ese resumen no existe o no te pertenece.']);
+        exit;
+    }
+
+    $pdo->prepare('DELETE FROM resumenes_derivacion WHERE id = ?')->execute([$id]);
+    registrarAuditoria($pdo, 'eliminar', 'derivacion', $id, "Se eliminó PARA SIEMPRE el resumen de derivación de \"{$derivacion['nombre_completo']}\" (sin pasar por papelera).");
+    echo json_encode(['ok' => true, 'mensaje' => 'Resumen eliminado para siempre. No se puede recuperar.']);
+    exit;
+}
+
 http_response_code(400);
 echo json_encode(['ok' => false, 'error' => 'Solicitud no válida.']);

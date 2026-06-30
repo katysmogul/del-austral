@@ -921,6 +921,7 @@
     <button class="tab-busqueda" data-tab-config="papelera">Papelera</button>
     <button class="tab-busqueda" data-tab-config="huerfanos">Legajos huérfanos</button>
     <button class="tab-busqueda" data-tab-config="calendario">Calendario de licencias</button>
+    <button class="tab-busqueda" data-tab-config="papelera-derivaciones">Papelera de derivaciones</button>
   </div>
 
   <div id="panel-config-sedes">
@@ -1011,6 +1012,24 @@
     </div>
   </div>
 
+  <div id="panel-config-papelera-derivaciones" class="oculto">
+    <div class="panel">
+      <div class="panel-titulo">Papelera de resúmenes de derivación</div>
+      <p class="panel-subtitulo">Elegí una sede y un profesional para ver los resúmenes que eliminó, y recuperarlos asignándolos a otro profesional de esa misma sede.</p>
+      <div class="fila-selectores-papelera">
+        <div class="campo">
+          <label>Sede</label>
+          <select id="select-sede-papelera-derivaciones-dev"><option value="">Elegí una sede…</option></select>
+        </div>
+        <div class="campo">
+          <label>Profesional (de quién ver la papelera)</label>
+          <select id="select-profesional-papelera-derivaciones-dev" disabled><option value="">Elegí primero una sede…</option></select>
+        </div>
+      </div>
+      <div id="lista-papelera-derivaciones-dev" class="lista-resultados"></div>
+    </div>
+  </div>
+
   <div id="panel-config-huerfanos" class="oculto">
     <div class="panel">
       <div class="panel-titulo">Legajos de profesionales sin acceso</div>
@@ -1057,6 +1076,24 @@
       <div class="acciones-modal">
         <button class="btn btn-secundario" id="btn-cancelar-recuperar-legajo">Cancelar</button>
         <button class="btn btn-primario" id="btn-confirmar-recuperar-legajo">Recuperar legajo</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-recuperar-derivacion">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 440px;">
+      <h3>Recuperar resumen de derivación</h3>
+      <p id="texto-derivacion-recuperar"></p>
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>Asignar a qué profesional</label>
+        <select id="select-nuevo-profesional-recuperar-derivacion"></select>
+        <span class="ayuda">Solo se muestran profesionales que atienden en la misma sede donde estaba este resumen.</span>
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-recuperar-derivacion">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-recuperar-derivacion">Recuperar resumen</button>
       </div>
     </div>
   </div>

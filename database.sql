@@ -296,6 +296,19 @@ CREATE TABLE IF NOT EXISTS resumenes_derivacion (
     FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+CREATE TABLE IF NOT EXISTS derivaciones_eliminadas (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    derivacion_id_original INT NOT NULL,
+    profesional_id_original INT NULL,
+    sede_id_original INT NULL,
+    nombre_completo VARCHAR(200) NOT NULL,
+    dni VARCHAR(20) NOT NULL,
+    datos_json LONGTEXT NOT NULL,
+    eliminado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_derivacion_eliminada_profesional (profesional_id_original),
+    INDEX idx_derivacion_eliminada_sede (sede_id_original)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS historial_cambios (
     id INT PRIMARY KEY AUTO_INCREMENT,
     usuario_id INT NULL,

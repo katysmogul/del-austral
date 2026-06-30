@@ -2221,7 +2221,7 @@ async function montarVistaConfiguracion(contenido) {
   }
 
   const tabs = contenido.querySelectorAll('[data-tab-config]');
-  const paneles = { sedes: 'panel-config-sedes', usuarios: 'panel-config-usuarios', historial: 'panel-config-historial', version: 'panel-config-version', reportes: 'panel-config-reportes', papelera: 'panel-config-papelera', huerfanos: 'panel-config-huerfanos', calendario: 'panel-config-calendario' };
+  const paneles = { sedes: 'panel-config-sedes', usuarios: 'panel-config-usuarios', historial: 'panel-config-historial', version: 'panel-config-version', reportes: 'panel-config-reportes', papelera: 'panel-config-papelera', huerfanos: 'panel-config-huerfanos', calendario: 'panel-config-calendario', 'papelera-derivaciones': 'panel-config-papelera-derivaciones' };
   tabs.forEach(tab => {
     tab.addEventListener('click', () => {
       tabs.forEach(t => t.classList.remove('activo'));
@@ -2237,6 +2237,7 @@ async function montarVistaConfiguracion(contenido) {
       if (destino === 'papelera') inicializarPapeleraDev();
       if (destino === 'huerfanos') inicializarLegajosHuerfanos();
       if (destino === 'calendario') inicializarCalendarioLicencias();
+      if (destino === 'papelera-derivaciones') inicializarPapeleraDerivacionesDev();
     });
   });
 
@@ -2248,6 +2249,7 @@ async function montarVistaConfiguracion(contenido) {
 }
 
 let SEDE_PAPELERA_DEV_ID = null;
+let SEDE_PAPELERA_DERIVACIONES_DEV_ID = null;
 
 async function inicializarPapeleraDev() {
   const selectSede = document.getElementById('select-sede-papelera-dev');
@@ -2402,6 +2404,162 @@ async function abrirModalRecuperarLegajo(reg) {
       mostrarToast(e.message, 'error');
       btn.disabled = false;
       btn.textContent = 'Recuperar legajo';
+    }
+  });
+}
+
+async function inicializarPapeleraDerivacionesDev() {
+  const selectSede = document.getElementById('select-sede-papelera-derivaciones-dev');
+  const selectProf = document.getElementById('select-profesional-papelera-derivaciones-dev');
+  const lista = document.getElementById('lista-papelera-derivaciones-dev');
+
+  if (!selectSede.dataset.cargado) {
+    try {
+      const res = await llamarApi(`${API.auth}?accion=listar_sedes`, { method: 'POST', body: JSON.stringify({ accion: 'listar_sedes' }) });
+      const sedesActivas = res.datos.filter(s => s.activa);
+      sedesActivas.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        opt.textContent = s.nombre;
+        selectSede.appendChild(opt);
+      });
+      selectSede.dataset.cargado = '1';
+    } catch (e) {
+      mostrarToast(e.message, 'error');
+    }
+  }
+
+  selectSede.onchange = async () => {
+    SEDE_PAPELERA_DERIVACIONES_DEV_ID = selectSede.value || null;
+    selectProf.innerHTML = '<option value="">Cargando…</option>';
+    selectProf.disabled = true;
+    lista.innerHTML = '';
+
+    if (!SEDE_PAPELERA_DERIVACIONES_DEV_ID) {
+      selectProf.innerHTML = '<option value="">Elegí primero una sede…</option>';
+      return;
+    }
+
+    try {
+      const res = await llamarApi(`${API.auth}?accion=listar_profesionales_sede_dev`, {
+        method: 'POST',
+        body: JSON.stringify({ accion: 'listar_profesionales_sede_dev', sede_id: SEDE_PAPELERA_DERIVACIONES_DEV_ID }),
+      });
+      selectProf.innerHTML = '<option value="">Elegí un profesional…</option>';
+      res.datos.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.nombre_completo;
+        selectProf.appendChild(opt);
+      });
+      selectProf.disabled = false;
+    } catch (e) {
+      mostrarToast(e.message, 'error');
+    }
+  };
+
+  selectProf.onchange = () => {
+    if (selectProf.value) cargarPapeleraDerivacionesDevDeProfesional(selectProf.value);
+    else lista.innerHTML = '';
+  };
+}
+
+async function cargarPapeleraDerivacionesDevDeProfesional(profesionalId) {
+  const lista = document.getElementById('lista-papelera-derivaciones-dev');
+  lista.innerHTML = '<div class="cargando-pagina chico"><span class="spinner"></span></div>';
+  try {
+    const res = await llamarApi(`${API.auth}?accion=listar_papelera_derivaciones_dev`, {
+      method: 'POST',
+      body: JSON.stringify({ accion: 'listar_papelera_derivaciones_dev', profesional_id: profesionalId, sede_id: SEDE_PAPELERA_DERIVACIONES_DEV_ID }),
+    });
+    lista.innerHTML = '';
+    if (!res.datos.length) {
+      lista.innerHTML = '<p class="resumen-vacio">Este profesional no tiene resúmenes de derivación eliminados en esta sede.</p>';
+      return;
+    }
+    res.datos.forEach(reg => lista.appendChild(crearFilaPapeleraDerivacionDev(reg)));
+  } catch (e) {
+    lista.innerHTML = '';
+    mostrarToast(e.message, 'error');
+  }
+}
+
+function crearFilaPapeleraDerivacionDev(reg) {
+  const fila = document.createElement('div');
+  fila.className = 'tarjeta-paciente';
+  const fecha = new Date(reg.eliminado_en).toLocaleDateString('es-AR');
+  fila.innerHTML = `
+    <div class="info-principal">
+      <div class="avatar-iniciales" style="background:#F5E3DC; color:#C4654A;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6h16z"/></svg>
+      </div>
+      <div>
+        <div class="nombre">${escaparHtml(reg.nombre_completo)}</div>
+        <div class="meta">DNI ${escaparHtml(reg.dni)} · Eliminado el ${fecha}</div>
+      </div>
+    </div>
+    <div class="acciones-tarjeta"></div>
+  `;
+  const acciones = fila.querySelector('.acciones-tarjeta');
+  const btnRecuperar = document.createElement('button');
+  btnRecuperar.className = 'btn btn-secundario btn-chico';
+  btnRecuperar.textContent = 'Recuperar';
+  btnRecuperar.addEventListener('click', () => abrirModalRecuperarDerivacion(reg));
+  acciones.appendChild(btnRecuperar);
+  return fila;
+}
+
+async function abrirModalRecuperarDerivacion(reg) {
+  const modalEnv = clonarPlantilla('tpl-modal-recuperar-derivacion');
+  document.body.appendChild(modalEnv);
+  document.getElementById('texto-derivacion-recuperar').textContent =
+    `El resumen de ${reg.nombre_completo} (DNI ${reg.dni}) va a volver a aparecer activo, a nombre del profesional que elijas.`;
+
+  const select = document.getElementById('select-nuevo-profesional-recuperar-derivacion');
+  select.innerHTML = '<option value="">Cargando…</option>';
+  try {
+    const res = await llamarApi(`${API.auth}?accion=listar_profesionales_sede_dev`, {
+      method: 'POST',
+      body: JSON.stringify({ accion: 'listar_profesionales_sede_dev', sede_id: reg.sede_id_original }),
+    });
+    select.innerHTML = '';
+    if (!res.datos.length) {
+      select.innerHTML = '<option value="">No hay profesionales en esa sede</option>';
+    } else {
+      res.datos.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.nombre_completo;
+        select.appendChild(opt);
+      });
+    }
+  } catch (e) {
+    select.innerHTML = '';
+    mostrarToast(e.message, 'error');
+  }
+
+  function cerrar() { modalEnv.remove(); }
+  document.getElementById('btn-cancelar-recuperar-derivacion').addEventListener('click', cerrar);
+  document.getElementById('btn-confirmar-recuperar-derivacion').addEventListener('click', async () => {
+    const nuevoProfesionalId = select.value;
+    if (!nuevoProfesionalId) { mostrarToast('Elegí a qué profesional asignarlo.', 'error'); return; }
+
+    const btn = document.getElementById('btn-confirmar-recuperar-derivacion');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Recuperando...';
+    try {
+      await llamarApi(API.auth, {
+        method: 'POST',
+        body: JSON.stringify({ accion: 'recuperar_derivacion_dev', id: reg.id, profesional_id: nuevoProfesionalId }),
+      });
+      mostrarToast('Resumen recuperado correctamente.', 'exito');
+      cerrar();
+      const selectProf = document.getElementById('select-profesional-papelera-derivaciones-dev');
+      if (selectProf.value) cargarPapeleraDerivacionesDevDeProfesional(selectProf.value);
+    } catch (e) {
+      mostrarToast(e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Recuperar resumen';
     }
   });
 }
@@ -3303,6 +3461,39 @@ async function cargarListaDocumentosPlus(filtro) {
         btnVer.textContent = 'Ver / Imprimir';
         btnVer.addEventListener('click', () => window.open(`exportar_derivacion.php?id=${d.id}`, '_blank'));
         fila.querySelector('.acciones-tarjeta').appendChild(btnVer);
+
+        const btnEliminar = document.createElement('button');
+        btnEliminar.className = 'btn-icono';
+        btnEliminar.title = 'Eliminar (se puede recuperar después)';
+        btnEliminar.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6h16z"/></svg>`;
+        btnEliminar.addEventListener('click', async () => {
+          if (!confirm(`¿Eliminar el resumen de ${d.nombre_completo}? Queda guardado en la papelera, el Desarrollador lo puede recuperar.`)) return;
+          try {
+            await llamarApi(`${API.constancias}?accion=eliminar_derivacion`, { method: 'POST', body: JSON.stringify({ id: d.id }) });
+            mostrarToast('Resumen eliminado. Queda en la papelera.', 'exito');
+            cargarListaDocumentosPlus('derivacion');
+          } catch (e) {
+            mostrarToast(e.message, 'error');
+          }
+        });
+        fila.querySelector('.acciones-tarjeta').appendChild(btnEliminar);
+
+        const btnEliminarDefinitivo = document.createElement('button');
+        btnEliminarDefinitivo.className = 'btn-icono peligro';
+        btnEliminarDefinitivo.title = 'Eliminar para siempre (no se puede recuperar)';
+        btnEliminarDefinitivo.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M4.93 4.93l14.14 14.14"/></svg>`;
+        btnEliminarDefinitivo.addEventListener('click', async () => {
+          if (!confirm(`¿Eliminar PARA SIEMPRE el resumen de ${d.nombre_completo}? Esta acción no se puede deshacer, ni siquiera el Desarrollador va a poder recuperarlo.`)) return;
+          try {
+            await llamarApi(`${API.constancias}?accion=eliminar_derivacion_definitivo`, { method: 'POST', body: JSON.stringify({ id: d.id }) });
+            mostrarToast('Resumen eliminado para siempre.', 'exito');
+            cargarListaDocumentosPlus('derivacion');
+          } catch (e) {
+            mostrarToast(e.message, 'error');
+          }
+        });
+        fila.querySelector('.acciones-tarjeta').appendChild(btnEliminarDefinitivo);
+
         cont.appendChild(fila);
       });
       return;

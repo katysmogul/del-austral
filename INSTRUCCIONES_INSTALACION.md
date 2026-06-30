@@ -27,6 +27,7 @@ En phpMyAdmin, entrá a tu base de datos → pestaña **"SQL"** (no "Importar"),
 | `migracion_v13.sql` | Matrícula nacional/provincial y sello automático generado al crear el legajo |
 | `migracion_v14.sql` | Constancias médicas (Servicios Plus) con validación por token |
 | `migracion_v15.sql` | Tratamiento prolongado, Receta y Resumen de derivación |
+| `migracion_v16.sql` | Papelera de resúmenes de derivación (eliminar / eliminar para siempre) |
 
 Ninguna de estas migraciones borra pacientes, sesiones, citas ni adjuntos existentes. Si no estás seguro de cuáles ya corriste, no pasa nada grave en correr una de nuevo por error — la mayoría usa `ALTER TABLE ... ADD COLUMN`, que falla de forma segura (sin romper nada) si la columna ya existe.
 
@@ -194,7 +195,7 @@ Desde el panel principal del profesional, "Servicios Plus" agrupa cuatro documen
 
 **Receta**: indicaciones (medicación, dosis, frecuencia, ejercicios) con diagnóstico opcional.
 
-**Resumen de derivación**: pensado para compartir directamente con otro profesional o institución (motivo de consulta, diagnóstico, tratamiento actual, observaciones, y a quién va dirigido). A diferencia de los otros tres, no tiene token de validación pública ni vencimiento — queda guardado de forma permanente, ya que no está pensado para que terceros lo validen.
+**Resumen de derivación**: pensado para compartir directamente con otro profesional o institución (motivo de consulta, diagnóstico, tratamiento actual, observaciones, y a quién va dirigido). A diferencia de los otros tres, no tiene token de validación pública ni vencimiento — queda guardado de forma permanente, ya que no está pensado para que terceros lo validen. Como nunca se borra solo, el profesional puede **eliminarlo** (va a una papelera, recuperable después por el Desarrollador desde "Papelera de derivaciones") o **eliminarlo para siempre** (irreversible, ni el Desarrollador lo puede recuperar).
 
 **Cómo funciona la creación (los tres con token):**
 1. El profesional elige si busca un legajo existente (autocompleta nombre y DNI) o carga los datos a mano (sin necesidad de legajo).

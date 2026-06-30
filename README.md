@@ -49,7 +49,7 @@ Corre tanto en hosting compartido tipo cPanel (sin SSH, Composer ni extensiones 
 - 📱 **App instalable (PWA)**, sin pasar por ninguna tienda de aplicaciones.
 - 🔍 **Verificación de versión**: compara los archivos del servidor contra la última actualización entregada.
 - 📊 **Reportes por sede**, y **exportación masiva** de todos los legajos propios a un único archivo de respaldo.
-- 🎫 **Servicios Plus**: cuatro documentos exportables a PDF con legajo existente o carga manual sin necesidad de legajo — **Constancia de asistencia**, **Constancia de tratamiento prolongado** y **Receta** (con sello/firma automática y token público de validación que vence a los 90 días), y **Resumen de derivación** (sin token, para compartir directamente con otro profesional o institución, sin vencimiento).
+- 🎫 **Servicios Plus**: cuatro documentos exportables a PDF con legajo existente o carga manual sin necesidad de legajo — **Constancia de asistencia**, **Constancia de tratamiento prolongado** y **Receta** (con sello/firma automática y token público de validación que vence a los 90 días), y **Resumen de derivación** (sin token, para compartir directamente con otro profesional o institución, sin vencimiento automático, pero con su propia papelera: eliminar/recuperar o eliminar para siempre).
 
 ## Stack técnico
 
@@ -89,6 +89,7 @@ del-austral/
 ├── migracion_v13.sql            # Matrícula nacional/provincial y sello automático
 ├── migracion_v14.sql            # Constancias médicas (Servicios Plus) con validación por token
 ├── migracion_v15.sql            # Tratamiento prolongado, Receta y Resumen de derivación
+├── migracion_v16.sql            # Papelera de resúmenes de derivación
 ├── exportar_constancia.php       # Vista de impresión/exportación de constancia/tratamiento/receta a PDF
 ├── exportar_derivacion.php        # Vista de impresión/exportación de resumen de derivación a PDF (sin token)
 ├── validar_constancia.php         # Página pública (sin login) para validar constancias por token
@@ -122,7 +123,7 @@ Resumen rápido para una instalación nueva:
 3. Subí todo el proyecto a tu hosting o VPS, incluyendo la carpeta `adjuntos/`.
 4. Abrí el sitio: la primera vez te va a pedir crear la clave de Desarrollador, y luego tu primera sede y profesional.
 
-Si venís de una versión anterior con pacientes ya cargados, corré las migraciones en orden (`migracion_v2.sql` hasta `migracion_v15.sql`), sin saltarte ninguna. Ningún script borra pacientes, sesiones, citas ni adjuntos.
+Si venís de una versión anterior con pacientes ya cargados, corré las migraciones en orden (`migracion_v2.sql` hasta `migracion_v16.sql`), sin saltarte ninguna. Ningún script borra pacientes, sesiones, citas ni adjuntos.
 
 ## Sedes, profesionales y roles
 

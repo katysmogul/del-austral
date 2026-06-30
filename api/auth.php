@@ -567,6 +567,98 @@ if ($accion === 'recuperar_legajo_dev') {
 }
 
 // ------------------------------------------------------------
+// PAPELERA DE DERIVACIONES (DESARROLLADOR): ver los resúmenes
+// de derivación eliminados de un profesional, filtrados por
+// sede (mismo patrón que la papelera de pacientes).
+// ------------------------------------------------------------
+if ($accion === 'listar_papelera_derivaciones_dev') {
+    requiereDesarrollador();
+    $profesionalId = $input['profesional_id'] ?? 0;
+    $sedeId = $input['sede_id'] ?? 0;
+    $stmt = $pdo->prepare('
+        SELECT id, derivacion_id_original, nombre_completo, dni, eliminado_en, sede_id_original
+        FROM derivaciones_eliminadas
+        WHERE profesional_id_original = ? AND sede_id_original = ?
+        ORDER BY eliminado_en DESC
+    ');
+    $stmt->execute([$profesionalId, $sedeId]);
+    echo json_encode(['ok' => true, 'datos' => $stmt->fetchAll()]);
+    exit;
+}
+
+// ------------------------------------------------------------
+// RECUPERAR RESUMEN DE DERIVACIÓN (DESARROLLADOR): reasigna a
+// un profesional de la misma sede donde estaba originalmente.
+// ------------------------------------------------------------
+if ($accion === 'recuperar_derivacion_dev') {
+    requiereDesarrollador();
+    $idPapelera = $input['id'] ?? 0;
+    $nuevoProfesionalId = $input['profesional_id'] ?? 0;
+
+    $stmt = $pdo->prepare('SELECT * FROM derivaciones_eliminadas WHERE id = ?');
+    $stmt->execute([$idPapelera]);
+    $registro = $stmt->fetch();
+    if (!$registro) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'error' => 'Ese registro de la papelera no existe.']);
+        exit;
+    }
+
+    $sedeOriginalId = $registro['sede_id_original'];
+
+    $stmtCheck = $pdo->prepare('
+        SELECT u.nombre_completo FROM usuarios u
+        INNER JOIN usuarios_sedes us ON us.usuario_id = u.id
+        WHERE u.id = ? AND u.rol = "profesional" AND u.activo = 1 AND us.sede_id = ?
+    ');
+    $stmtCheck->execute([$nuevoProfesionalId, $sedeOriginalId]);
+    $nuevoProfesional = $stmtCheck->fetch();
+    if (!$nuevoProfesional) {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'Ese profesional no atiende en la sede donde estaba este resumen.']);
+        exit;
+    }
+
+    $datos = json_decode($registro['datos_json'], true);
+
+    $pdo->beginTransaction();
+    try {
+        $stmt = $pdo->prepare('
+            INSERT INTO resumenes_derivacion
+            (profesional_id, sede_id, paciente_id, nombre_completo, dni, motivo_consulta, diagnostico, tratamiento_actual, destinatario, observaciones)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ');
+        $stmt->execute([
+            $nuevoProfesionalId,
+            $sedeOriginalId,
+            $datos['paciente_id'] ?? null,
+            $datos['nombre_completo'] ?? '',
+            $datos['dni'] ?? '',
+            $datos['motivo_consulta'] ?? null,
+            $datos['diagnostico'] ?? null,
+            $datos['tratamiento_actual'] ?? null,
+            $datos['destinatario'] ?? null,
+            $datos['observaciones'] ?? null,
+        ]);
+        $nuevoId = $pdo->lastInsertId();
+
+        $pdo->prepare('DELETE FROM derivaciones_eliminadas WHERE id = ?')->execute([$idPapelera]);
+
+        $pdo->commit();
+        registrarAuditoria(
+            $pdo, 'crear', 'derivacion', $nuevoId,
+            "Se recuperó de la papelera el resumen de derivación de {$datos['nombre_completo']}, asignado a {$nuevoProfesional['nombre_completo']}."
+        );
+        echo json_encode(['ok' => true, 'id' => $nuevoId]);
+    } catch (Exception $e) {
+        $pdo->rollBack();
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'error' => 'No se pudo recuperar el resumen.']);
+    }
+    exit;
+}
+
+// ------------------------------------------------------------
 // BUSCAR PROFESIONALES (DESARROLLADOR) — búsqueda unificada
 // por nombre, apellido, DNI o número de legajo.
 // ------------------------------------------------------------
