@@ -166,12 +166,12 @@ $edad = calcularEdadExport($paciente['fecha_nacimiento']);
 
   .bloque-firma {
     margin-top: 50px;
-    width: 260px;
+    width: 300px;
     text-align: center;
   }
   .imagen-firma {
-    max-width: 220px;
-    max-height: 80px;
+    max-width: 280px;
+    max-height: 110px;
     margin: 0 auto 4px;
     display: block;
   }

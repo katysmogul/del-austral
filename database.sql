@@ -73,6 +73,8 @@ CREATE TABLE IF NOT EXISTS profesionales_legajos (
     fecha_nacimiento DATE NULL,
     lugar_nacimiento VARCHAR(150) NULL,
     especialidad VARCHAR(150) NULL,
+    matricula_nacional VARCHAR(30) NULL,
+    matricula_provincial VARCHAR(30) NULL,
     email VARCHAR(150) NULL,
     telefono VARCHAR(40) NULL,
     firma_digital MEDIUMTEXT NULL,

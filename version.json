@@ -1,17 +1,17 @@
 {
-  "version": "v23",
+  "version": "v28",
   "fecha": "2026-06-30",
-  "descripcion": "Entrega final: firma digital (dibujada o subida) en el PDF exportado, detección de pacientes en riesgo de abandono ajustada por su propio ritmo de visitas, y calendario mensual de vencimientos de licencia para el Desarrollador",
+  "descripcion": "El sello automático ahora muestra el título junto al nombre (ej: 'Dr. Juan Pérez'), con la especialidad sola debajo, como en un sello real",
   "archivos_criticos": {
-    "index.html": "5477853e2519ab620dbd61f81e60a537",
-    "assets/js/app.js": "ea6de159fd836d8b09fc4c424e51966a",
-    "assets/css/estilos.css": "9091b4865695cfa01fcbfd9758ad954d",
-    "api/auth.php": "6f7e7013eec4f93a482981668ff6e754",
+    "index.html": "36c702a69103dc0a12acfa0ab669c0c8",
+    "assets/js/app.js": "d07d9460be9f1998061979aa5e96f8ea",
+    "assets/css/estilos.css": "b4b8ff61d69a0782528ccdc3d4ad4e78",
+    "api/auth.php": "ae4c6fa7926cce80520b6ccb02f98ce0",
     "api/citas.php": "7622c3facffd9fb671fa63494be56124",
     "api/pacientes.php": "df7de793317e8229120119a5050c44c2",
     "api/adjuntos.php": "8da3f85e26239072953298c60dcb5540",
     "api/admin.php": "b0f9dbf5039e62dc5c0692268ce46613",
     "confirmar_turno.php": "ad6a798a41a594bb5dcc797295222cce",
-    "exportar.php": "a10f27743c3af92dcf8fa3f364efdae9"
+    "exportar.php": "1f6661903954229762d858d2f179da94"
   }
 }

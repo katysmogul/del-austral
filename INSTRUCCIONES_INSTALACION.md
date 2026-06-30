@@ -24,6 +24,7 @@ En phpMyAdmin, entrá a tu base de datos → pestaña **"SQL"** (no "Importar"),
 | `migracion_v10.sql` | Legajos completos de profesionales (datos personales, especialidad) y sistema de licencias |
 | `migracion_v11.sql` | Número de legajo automático (formato `LG-AAAA-NNN`) |
 | `migracion_v12.sql` | Firma digital del profesional |
+| `migracion_v13.sql` | Matrícula nacional/provincial y sello automático generado al crear el legajo |
 
 Ninguna de estas migraciones borra pacientes, sesiones, citas ni adjuntos existentes. Si no estás seguro de cuáles ya corriste, no pasa nada grave en correr una de nuevo por error — la mayoría usa `ALTER TABLE ... ADD COLUMN`, que falla de forma segura (sin romper nada) si la columna ya existe.
 
@@ -136,7 +137,7 @@ La pantalla de acceso normal no menciona que existe un rol de Desarrollador, a p
 Desde el panel de Desarrollador tenés estas pestañas:
 
 - **Sedes**: crear sedes nuevas, renombrarlas (el cambio se refleja automáticamente en todos los legajos existentes, sin perder ni mover nada — pacientes y profesionales se vinculan por un identificador interno, no por el texto del nombre), o desactivarlas.
-- **Usuarios**: agregar profesionales (con su legajo completo: título, nombre, DNI, fecha y lugar de nacimiento, especialidad, contacto, sede y licencia) o administrativas (alta simple). Cada profesional recibe un número de legajo automático con formato `LG-2026-001`. Desde acá también podés editar el legajo de un profesional ya creado, gestionar su licencia (activarla por 7 a 120 días o indeterminada, pausarla o prohibirla), cambiar su PIN sin recrearlo, restaurar el acceso de alguien desactivado, y buscar por nombre, DNI o número de legajo en un único buscador.
+- **Usuarios**: agregar profesionales (con su legajo completo: título, nombre, DNI, fecha y lugar de nacimiento, especialidad, matrícula nacional y/o provincial —ambas opcionales—, contacto, sede y licencia) o administrativas (alta simple). Cada profesional recibe un número de legajo automático con formato `LG-2026-001`, y un sello/firma de partida generado automáticamente con sus datos (nombre, título y matrícula si la cargaste). Desde acá también podés editar el legajo de un profesional ya creado (si todavía tiene el sello automático sin reemplazar, se regenera solo con los datos nuevos al guardar), gestionar su licencia (activarla por 7 a 120 días o indeterminada, pausarla o prohibirla), cambiar su PIN sin recrearlo, restaurar el acceso de alguien desactivado, y buscar por nombre, DNI o número de legajo en un único buscador.
 - **Historial de cambios**: el Desarrollador ve todo el historial de todos los profesionales, con un filtro opcional por tipo de entidad.
 - **Versión del sistema**: compara los archivos del servidor contra la última actualización entregada.
 - **Reportes por sede**: resumen de cada sede (profesionales, pacientes, actividad del mes).
@@ -150,7 +151,7 @@ Desde el panel de Desarrollador tenés estas pestañas:
 
 - **Crear legajo**: registra un paciente con sus datos, obra social y, opcionalmente, las primeras sesiones.
 - **Acceder a legajos**: buscá por DNI, nombre, fecha, obra social o sede. Desde la ficha podés editar datos, cambiar de sede, agregar/editar/eliminar sesiones, usar plantillas de evolución, agendar citas, mandar recordatorio de turno por WhatsApp, subir/descargar adjuntos, y exportar a PDF.
-- **Firma digital**: desde "Mi legajo" → "Mi firma", podés dibujarla con el mouse o el dedo, o subir una foto de tu firma real. Una vez guardada, se inserta automáticamente al pie de cada legajo que exportes a PDF.
+- **Firma digital**: cuando el Desarrollador crea el legajo, el sistema genera automáticamente un sello de partida (título junto al nombre, especialidad y matrícula si la cargaste, en el estilo de un sello real). Desde "Mi legajo" → "Mi firma", el profesional ve ese sello ya precargado en el recuadro de dibujo y puede firmar directamente encima con el mouse o el dedo, reemplazarlo subiendo una imagen de su propio sello escaneado (firmando igual encima), o limpiar todo y dibujar una firma libre. Sea cual sea el resultado, se inserta automáticamente al pie de cada legajo que exporte a PDF.
 - **Agenda**: calendario mensual con tus citas, más un resumen de próximas citas en el panel principal.
 - **"Hoy tenés X consultas"**: franja en el panel principal con la cantidad de consultas de hoy que todavía no llegó su hora.
 - **Aviso de confirmaciones y cancelaciones**: cartel con la cantidad de novedades cuando un paciente confirma o cancela desde el link de WhatsApp.

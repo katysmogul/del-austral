@@ -2,9 +2,11 @@
 -- Del Austral — REINICIO TOTAL DEL SISTEMA
 -- ============================================================
 -- Este script borra TODO: usuarios, sedes, clave de Desarrollador,
--- pacientes, sesiones, citas, archivos adjuntos (los registros en
--- la base, no los archivos físicos en el servidor), plantillas de
--- evolución, papelera, e historial de cambios.
+-- legajos completos de profesionales (datos personales, matrícula,
+-- firma digital), pacientes, sesiones, citas, archivos adjuntos
+-- (los registros en la base, no los archivos físicos en el
+-- servidor), plantillas de evolución, papelera, e historial de
+-- cambios.
 --
 -- Después de correr esto, el sistema vuelve a quedar como recién
 -- instalado: la primera vez que entres te va a pedir crear la
@@ -35,6 +37,7 @@ DELETE FROM citas;
 DELETE FROM sesiones;
 DELETE FROM pacientes;
 DELETE FROM plantillas_evolucion;
+DELETE FROM profesionales_legajos;
 DELETE FROM usuarios_sedes;
 DELETE FROM usuarios;
 DELETE FROM sedes;
@@ -50,6 +53,7 @@ ALTER TABLE citas AUTO_INCREMENT = 1;
 ALTER TABLE sesiones AUTO_INCREMENT = 1;
 ALTER TABLE pacientes AUTO_INCREMENT = 1;
 ALTER TABLE plantillas_evolucion AUTO_INCREMENT = 1;
+ALTER TABLE profesionales_legajos AUTO_INCREMENT = 1;
 ALTER TABLE usuarios AUTO_INCREMENT = 1;
 ALTER TABLE sedes AUTO_INCREMENT = 1;
 ALTER TABLE desarrollador AUTO_INCREMENT = 1;

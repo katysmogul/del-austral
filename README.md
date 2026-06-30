@@ -28,7 +28,7 @@ Corre tanto en hosting compartido tipo cPanel (sin SSH, Composer ni extensiones 
 - 🏥 **Multi-sede**: un consultorio puede tener varias sucursales, renombrables en cualquier momento sin perder ni mover ningún legajo existente.
 - 👥 **Multi-profesional con aislamiento total**: cada profesional ve únicamente sus propios pacientes, incluso compartiendo sede con otros. El filtrado se aplica en el servidor, no solo en la interfaz.
 - 🛠️ **Rol Desarrollador**: nivel de acceso separado y discreto (sin mención en la pantalla de login pública), dedicado a crear/renombrar sedes y gestionar profesionales y administrativas.
-- 🪪 **Legajos completos de profesionales**: título, nombre, DNI, fecha y lugar de nacimiento, especialidad, contacto, y un número de legajo automático con formato `LG-2026-001`.
+- 🪪 **Legajos completos de profesionales**: título, nombre, DNI, fecha y lugar de nacimiento, especialidad, matrícula nacional/provincial (ambas opcionales), contacto, y un número de legajo automático con formato `LG-2026-001`.
 - ⏳ **Sistema de licencias por profesional**: activa por 7/15/30/60/90/120 días o indeterminada, pausada o prohibida. Si vence, el acceso se bloquea solo, con un mensaje claro al intentar entrar.
 - 📅 **Calendario de vencimientos de licencia** y aviso anticipado de los que vencen en la próxima semana, para el Desarrollador.
 - 🧑‍💼 **Rol Administrativa**: gestiona agenda y contacto de los pacientes de un profesional elegido al iniciar sesión, sin acceso a contenido clínico.
@@ -38,7 +38,7 @@ Corre tanto en hosting compartido tipo cPanel (sin SSH, Composer ni extensiones 
 - ✅ **Confirmación de turno por el paciente**: link público único (sin login) para confirmar o cancelar.
 - 💬 **Recordatorio de turnos por WhatsApp**, con el link de confirmación incluido.
 - 📎 **Archivos adjuntos** por paciente (PDF e imágenes, hasta 15 MB), con validación real de tipo MIME.
-- ✍️ **Firma digital del profesional**: dibujada con mouse/dedo o subida como imagen, se inserta automáticamente al pie de cada legajo exportado a PDF.
+- ✍️ **Firma digital del profesional**: generada automáticamente al crear el legajo (sello con nombre, título, especialidad y matrícula, en el estilo de un sello real). El profesional la ve precargada en "Mi legajo" y puede firmar encima con mouse o dedo, reemplazarla subiendo una imagen de su propio sello escaneado, o dibujar una firma libre. Se inserta automáticamente al pie de cada legajo exportado a PDF.
 - 📄 **Exportación de legajo a PDF** vía vista de impresión del navegador.
 - ⚠️ **Detección de pacientes en riesgo de abandono**, comparando cuánto pasó desde la última sesión contra el ritmo histórico propio de cada paciente (no una regla fija igual para todos).
 - 🎂 Resumen de próximos cumpleaños y pacientes sin sesiones recientes.
@@ -85,6 +85,7 @@ del-austral/
 ├── migracion_v10.sql            # Legajos completos de profesionales + sistema de licencias
 ├── migracion_v11.sql            # Número de legajo automático (LG-AAAA-NNN)
 ├── migracion_v12.sql            # Firma digital del profesional
+├── migracion_v13.sql            # Matrícula nacional/provincial y sello automático
 ├── config/
 │   └── config.php               # Credenciales de BD + helpers de sesión/rol/auditoría
 ├── api/
@@ -113,7 +114,7 @@ Resumen rápido para una instalación nueva:
 3. Subí todo el proyecto a tu hosting o VPS, incluyendo la carpeta `adjuntos/`.
 4. Abrí el sitio: la primera vez te va a pedir crear la clave de Desarrollador, y luego tu primera sede y profesional.
 
-Si venís de una versión anterior con pacientes ya cargados, corré las migraciones en orden (`migracion_v2.sql` hasta `migracion_v12.sql`), sin saltarte ninguna. Ningún script borra pacientes, sesiones, citas ni adjuntos.
+Si venís de una versión anterior con pacientes ya cargados, corré las migraciones en orden (`migracion_v2.sql` hasta `migracion_v13.sql`), sin saltarte ninguna. Ningún script borra pacientes, sesiones, citas ni adjuntos.
 
 ## Sedes, profesionales y roles
 
@@ -183,5 +184,3 @@ Ideas pendientes, sin compromiso de implementación:
 [PolyForm Noncommercial 1.0.0](./LICENSE) — código fuente disponible para cualquier uso **no comercial**: estudio personal, proyectos propios sin fines de lucro, instituciones educativas, organizaciones de salud pública, ONGs y organismos de gobierno. Para uso comercial (ofrecerlo como servicio, instalarlo a terceros a cambio de un pago, integrarlo en un producto comercial) se necesita una licencia aparte — abrí un issue o contactá a quien mantiene este repositorio.
 
 ---
-
-Construido de forma iterativa junto a [Claude](https://claude.ai) (Anthropic).

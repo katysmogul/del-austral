@@ -1566,7 +1566,7 @@ a { color: var(--salvia); text-decoration: none; }
 .canvas-firma {
   width: 100%;
   max-width: 500px;
-  height: 160px;
+  height: 170px;
   background: var(--crema);
   border: 1.5px dashed var(--linea);
   border-radius: var(--radio-chico);

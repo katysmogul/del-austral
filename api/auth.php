@@ -31,6 +31,49 @@ function generarNumeroLegajo($pdo) {
     return "LG-$anio-" . str_pad($total + 1, 3, '0', STR_PAD_LEFT);
 }
 
+/**
+ * Genera un sello automático tipo texto (nombre + título +
+ * matrícula) como imagen SVG en base64, similar a un sello de
+ * profesional escaneado pero generado al instante. Sirve como
+ * firma de partida; el profesional puede reemplazarla después
+ * dibujando o subiendo su propia firma/sello real.
+ */
+function generarSelloAutomatico($titulo, $nombre, $apellido, $especialidad, $matriculaNacional, $matriculaProvincial) {
+    // mb_strtoupper respeta tildes y caracteres UTF-8 (strtoupper
+    // normal corrompe letras como "ó" o "í" porque procesa byte
+    // por byte). Si por algún motivo mbstring no está disponible
+    // en el hosting, usamos el texto tal cual en vez de romper.
+    $aMayusculas = function_exists('mb_strtoupper')
+        ? fn($t) => mb_strtoupper($t, 'UTF-8')
+        : fn($t) => strtoupper($t);
+
+    $nombreCompleto = htmlspecialchars("$titulo $nombre $apellido", ENT_QUOTES);
+    $tituloLimpio = trim(str_replace('.', '', $titulo));
+    $tituloEspecialidad = $especialidad ? $especialidad : ($tituloLimpio . (str_contains($titulo, 'Dr') ? ' MÉDICO' : ''));
+    $tituloEspecialidad = trim($aMayusculas($tituloEspecialidad));
+    $tituloEspecialidad = htmlspecialchars($tituloEspecialidad, ENT_QUOTES);
+
+    $lineaMatricula = '';
+    if ($matriculaNacional && $matriculaProvincial) {
+        $lineaMatricula = "M.N. $matriculaNacional - M.P. $matriculaProvincial";
+    } elseif ($matriculaNacional) {
+        $lineaMatricula = "M.N. $matriculaNacional";
+    } elseif ($matriculaProvincial) {
+        $lineaMatricula = "M.P. $matriculaProvincial";
+    }
+    $lineaMatricula = htmlspecialchars($lineaMatricula, ENT_QUOTES);
+
+    $alturaTotal = $lineaMatricula ? 130 : 100;
+
+    $svg = '<svg xmlns="http://www.w3.org/2000/svg" width="460" height="' . $alturaTotal . '" viewBox="0 0 460 ' . $alturaTotal . '"><!--sello-automatico-->'
+        . '<text x="230" y="44" text-anchor="middle" font-family="Georgia, \'Times New Roman\', serif" font-style="italic" font-size="34" fill="#1C2421">' . $nombreCompleto . '</text>'
+        . ($tituloEspecialidad ? '<text x="230" y="74" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" letter-spacing="1" fill="#1C2421">' . $tituloEspecialidad . '</text>' : '')
+        . ($lineaMatricula ? '<text x="230" y="102" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" letter-spacing="1" fill="#1C2421">' . $lineaMatricula . '</text>' : '')
+        . '</svg>';
+
+    return 'data:image/svg+xml;base64,' . base64_encode($svg);
+}
+
 function aplicarBloqueoFuerzaBruta($claveSesionIntentos, $claveSesionBloqueo) {
     if (!isset($_SESSION[$claveSesionIntentos])) $_SESSION[$claveSesionIntentos] = 0;
     if (!isset($_SESSION[$claveSesionBloqueo])) $_SESSION[$claveSesionBloqueo] = 0;
@@ -754,6 +797,8 @@ if ($accion === 'crear_usuario') {
         $fechaNac = $input['fecha_nacimiento'] ?? null ?: null;
         $lugarNac = trim($input['lugar_nacimiento'] ?? '') ?: null;
         $especialidad = trim($input['especialidad'] ?? '') ?: null;
+        $matriculaNacional = trim($input['matricula_nacional'] ?? '') ?: null;
+        $matriculaProvincial = trim($input['matricula_provincial'] ?? '') ?: null;
         $email = trim($input['email'] ?? '') ?: null;
         $telefono = trim($input['telefono'] ?? '') ?: null;
         $licenciaDias = $input['licencia_dias'] !== '' ? (int) $input['licencia_dias'] : null;
@@ -769,6 +814,7 @@ if ($accion === 'crear_usuario') {
 
         $nombreCompleto = "$titulo $nombre $apellido";
         $hash = password_hash($pin . APP_SECRET, PASSWORD_BCRYPT);
+        $selloAutomatico = generarSelloAutomatico($titulo, $nombre, $apellido, $especialidad, $matriculaNacional, $matriculaProvincial);
 
         $pdo->beginTransaction();
         try {
@@ -777,8 +823,12 @@ if ($accion === 'crear_usuario') {
             $nuevoId = $pdo->lastInsertId();
 
             $numeroLegajo = generarNumeroLegajo($pdo);
-            $stmtLegajo = $pdo->prepare('INSERT INTO profesionales_legajos (usuario_id, numero_legajo, titulo, nombre, apellido, dni, fecha_nacimiento, lugar_nacimiento, especialidad, email, telefono) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-            $stmtLegajo->execute([$nuevoId, $numeroLegajo, $titulo, $nombre, $apellido, $dni, $fechaNac, $lugarNac, $especialidad, $email, $telefono]);
+            $stmtLegajo = $pdo->prepare('
+                INSERT INTO profesionales_legajos
+                (usuario_id, numero_legajo, titulo, nombre, apellido, dni, fecha_nacimiento, lugar_nacimiento, especialidad, matricula_nacional, matricula_provincial, email, telefono, firma_digital)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ');
+            $stmtLegajo->execute([$nuevoId, $numeroLegajo, $titulo, $nombre, $apellido, $dni, $fechaNac, $lugarNac, $especialidad, $matriculaNacional, $matriculaProvincial, $email, $telefono, $selloAutomatico]);
 
             $stmtSede = $pdo->prepare('INSERT INTO usuarios_sedes (usuario_id, sede_id) VALUES (?, ?)');
             foreach ($sedeIds as $sid) $stmtSede->execute([$nuevoId, $sid]);
@@ -880,6 +930,8 @@ if ($accion === 'editar_legajo_profesional') {
     $fechaNac = $input['fecha_nacimiento'] ?? null ?: null;
     $lugarNac = trim($input['lugar_nacimiento'] ?? '') ?: null;
     $especialidad = trim($input['especialidad'] ?? '') ?: null;
+    $matriculaNacional = trim($input['matricula_nacional'] ?? '') ?: null;
+    $matriculaProvincial = trim($input['matricula_provincial'] ?? '') ?: null;
     $email = trim($input['email'] ?? '') ?: null;
     $telefono = trim($input['telefono'] ?? '') ?: null;
 
@@ -892,23 +944,48 @@ if ($accion === 'editar_legajo_profesional') {
     $titulos = ['Dr.', 'Dra.', 'Lic.', 'Tec.', 'Mg.', 'Prof.', 'Otro'];
     if (!in_array($titulo, $titulos)) $titulo = 'Dr.';
 
-    $stmtCheck = $pdo->prepare('SELECT id FROM profesionales_legajos WHERE usuario_id = ?');
+    $stmtCheck = $pdo->prepare('SELECT id, firma_digital FROM profesionales_legajos WHERE usuario_id = ?');
     $stmtCheck->execute([$usuarioId]);
-    if (!$stmtCheck->fetch()) {
+    $legajoActual = $stmtCheck->fetch();
+    if (!$legajoActual) {
         http_response_code(404);
         echo json_encode(['ok' => false, 'error' => 'Ese legajo no existe.']);
         exit;
     }
 
+    // Solo regeneramos el sello automático si la firma actual es
+    // VACÍA o sigue siendo el sello automático (no si el profesional
+    // ya cargó su propia firma manual/escaneada, para no pisarla).
+    // El sello automático siempre es un SVG (las firmas dibujadas o
+    // subidas son PNG/JPEG), así que primero confirmamos que sea un
+    // SVG antes de decodificarlo y buscar la marca interna.
+    $firmaActual = $legajoActual['firma_digital'] ?? '';
+    $esSvg = is_string($firmaActual) && str_starts_with($firmaActual, 'data:image/svg+xml;base64,');
+    $esSelloAutomaticoOVacio = $firmaActual === '' || $firmaActual === null
+        || ($esSvg && str_contains(base64_decode(substr($firmaActual, strlen('data:image/svg+xml;base64,'))) ?: '', 'sello-automatico'));
+
     $pdo->beginTransaction();
     try {
-        $stmt = $pdo->prepare('
-            UPDATE profesionales_legajos
-            SET titulo = ?, nombre = ?, apellido = ?, dni = ?, fecha_nacimiento = ?,
-                lugar_nacimiento = ?, especialidad = ?, email = ?, telefono = ?
-            WHERE usuario_id = ?
-        ');
-        $stmt->execute([$titulo, $nombre, $apellido, $dni, $fechaNac, $lugarNac, $especialidad, $email, $telefono, $usuarioId]);
+        if ($esSelloAutomaticoOVacio) {
+            $selloNuevo = generarSelloAutomatico($titulo, $nombre, $apellido, $especialidad, $matriculaNacional, $matriculaProvincial);
+            $stmt = $pdo->prepare('
+                UPDATE profesionales_legajos
+                SET titulo = ?, nombre = ?, apellido = ?, dni = ?, fecha_nacimiento = ?,
+                    lugar_nacimiento = ?, especialidad = ?, matricula_nacional = ?, matricula_provincial = ?,
+                    email = ?, telefono = ?, firma_digital = ?
+                WHERE usuario_id = ?
+            ');
+            $stmt->execute([$titulo, $nombre, $apellido, $dni, $fechaNac, $lugarNac, $especialidad, $matriculaNacional, $matriculaProvincial, $email, $telefono, $selloNuevo, $usuarioId]);
+        } else {
+            $stmt = $pdo->prepare('
+                UPDATE profesionales_legajos
+                SET titulo = ?, nombre = ?, apellido = ?, dni = ?, fecha_nacimiento = ?,
+                    lugar_nacimiento = ?, especialidad = ?, matricula_nacional = ?, matricula_provincial = ?,
+                    email = ?, telefono = ?
+                WHERE usuario_id = ?
+            ');
+            $stmt->execute([$titulo, $nombre, $apellido, $dni, $fechaNac, $lugarNac, $especialidad, $matriculaNacional, $matriculaProvincial, $email, $telefono, $usuarioId]);
+        }
 
         $nombreCompleto = "$titulo $nombre $apellido";
         $pdo->prepare('UPDATE usuarios SET nombre_completo = ? WHERE id = ?')->execute([$nombreCompleto, $usuarioId]);

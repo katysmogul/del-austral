@@ -3026,6 +3026,8 @@ async function abrirModalNuevoProfesional() {
     const fechaNac = document.getElementById('input-fechanac-prof').value;
     const lugarNac = document.getElementById('input-lugarnac-prof').value.trim();
     const especialidad = document.getElementById('input-especialidad-prof').value.trim();
+    const matriculaNacional = document.getElementById('input-mn-prof').value.trim();
+    const matriculaProvincial = document.getElementById('input-mp-prof').value.trim();
     const email = document.getElementById('input-email-prof').value.trim();
     const tel = document.getElementById('input-tel-prof').value.trim();
     const pin = inputPin.value.trim();
@@ -3045,6 +3047,7 @@ async function abrirModalNuevoProfesional() {
         body: JSON.stringify({
           accion: 'crear_usuario', rol: 'profesional', titulo, nombre, apellido,
           dni, fecha_nacimiento: fechaNac, lugar_nacimiento: lugarNac, especialidad,
+          matricula_nacional: matriculaNacional, matricula_provincial: matriculaProvincial,
           email, telefono: tel, pin, sede_ids: sedeIds, licencia_dias: licenciaDias,
         }),
       });
@@ -3102,7 +3105,7 @@ async function abrirModalEditarLegajoProfesional(usuario) {
   const modalEnv = clonarPlantilla('tpl-modal-editar-legajo-profesional');
   document.body.appendChild(modalEnv);
 
-  const campos = ['titulo', 'nombre', 'apellido', 'dni', 'fechanac', 'lugarnac', 'especialidad', 'email', 'tel'];
+  const campos = ['titulo', 'nombre', 'apellido', 'dni', 'fechanac', 'lugarnac', 'especialidad', 'mn', 'mp', 'email', 'tel'];
   campos.forEach(c => { document.getElementById(`input-${c}-editar-prof`).disabled = true; });
 
   try {
@@ -3118,6 +3121,8 @@ async function abrirModalEditarLegajoProfesional(usuario) {
     document.getElementById('input-fechanac-editar-prof').value = l.fecha_nacimiento || '';
     document.getElementById('input-lugarnac-editar-prof').value = l.lugar_nacimiento || '';
     document.getElementById('input-especialidad-editar-prof').value = l.especialidad || '';
+    document.getElementById('input-mn-editar-prof').value = l.matricula_nacional || '';
+    document.getElementById('input-mp-editar-prof').value = l.matricula_provincial || '';
     document.getElementById('input-email-editar-prof').value = l.email || '';
     document.getElementById('input-tel-editar-prof').value = l.telefono || '';
     campos.forEach(c => { document.getElementById(`input-${c}-editar-prof`).disabled = false; });
@@ -3141,6 +3146,8 @@ async function abrirModalEditarLegajoProfesional(usuario) {
       fecha_nacimiento: document.getElementById('input-fechanac-editar-prof').value,
       lugar_nacimiento: document.getElementById('input-lugarnac-editar-prof').value.trim(),
       especialidad: document.getElementById('input-especialidad-editar-prof').value.trim(),
+      matricula_nacional: document.getElementById('input-mn-editar-prof').value.trim(),
+      matricula_provincial: document.getElementById('input-mp-editar-prof').value.trim(),
       email: document.getElementById('input-email-editar-prof').value.trim(),
       telefono: document.getElementById('input-tel-editar-prof').value.trim(),
     };
@@ -3277,25 +3284,22 @@ async function montarVistaMiLegajo(contenido) {
 
       <div class="panel" style="margin-top:18px;">
         <div class="panel-titulo">Mi firma</div>
-        <p class="panel-subtitulo">Se inserta automáticamente al pie de cada legajo que exportes a PDF.</p>
-        <div id="contenedor-firma-actual" style="margin-bottom:16px;"></div>
-        <div class="tabs-firma" style="display:flex; gap:8px; margin-bottom:14px;">
-          <button class="btn btn-secundario btn-chico" id="tab-dibujar-firma" type="button">Dibujar</button>
-          <button class="btn btn-secundario btn-chico" id="tab-subir-firma" type="button">Subir imagen</button>
+        <p class="panel-subtitulo">Se inserta automáticamente al pie de cada legajo que exportes a PDF. Tu sello actual ya está cargado en el recuadro de abajo: firmá encima con el mouse o el dedo, o subí otra imagen de sello para reemplazarlo.</p>
+        <div id="contenedor-firma-actual" style="margin-bottom:12px;"></div>
+
+        <div class="campo" style="margin-bottom:12px; max-width: 360px;">
+          <label>Reemplazar el sello de fondo (opcional)</label>
+          <input type="file" id="input-imagen-fondo-firma" accept="image/png,image/jpeg">
+          <span class="ayuda">Subí una foto de tu propio sello si querés cambiar el que ya está.</span>
         </div>
-        <div id="panel-dibujar-firma">
-          <canvas id="canvas-firma" width="500" height="160" class="canvas-firma"></canvas>
-          <div style="display:flex; gap:10px; margin-top:10px;">
-            <button class="btn btn-secundario btn-chico" id="btn-limpiar-firma" type="button">Limpiar</button>
-            <button class="btn btn-primario btn-chico" id="btn-guardar-firma-dibujada" type="button">Guardar firma</button>
-          </div>
+
+        <canvas id="canvas-firma" width="500" height="170" class="canvas-firma"></canvas>
+        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+          <button class="btn btn-secundario btn-chico" id="btn-quitar-imagen-fondo" type="button">Quitar imagen de fondo</button>
+          <button class="btn btn-secundario btn-chico" id="btn-limpiar-firma" type="button">Limpiar todo</button>
+          <button class="btn btn-primario btn-chico" id="btn-guardar-firma-dibujada" type="button">Guardar firma</button>
         </div>
-        <div id="panel-subir-firma" class="oculto">
-          <input type="file" id="input-subir-firma" accept="image/png,image/jpeg" style="margin-bottom:10px;">
-          <div>
-            <button class="btn btn-primario btn-chico" id="btn-guardar-firma-subida" type="button">Guardar firma</button>
-          </div>
-        </div>
+
         ${l.firma_digital ? '<button class="btn btn-texto" id="btn-quitar-firma" type="button" style="margin-top:12px; color:var(--coral);">Quitar firma actual</button>' : ''}
       </div>`;
 
@@ -3307,32 +3311,10 @@ async function montarVistaMiLegajo(contenido) {
 
 function inicializarModuloFirma(firmaActual) {
   const contActual = document.getElementById('contenedor-firma-actual');
-  if (firmaActual) {
-    contActual.innerHTML = `<div class="vista-firma-actual"><img src="${firmaActual}" alt="Tu firma actual"></div>`;
-  } else {
-    contActual.innerHTML = '<p class="resumen-vacio" style="margin:0;">Todavía no guardaste una firma.</p>';
-  }
+  contActual.innerHTML = firmaActual
+    ? '<p class="ayuda" style="margin:0 0 4px;">Tu sello/firma actual ya está cargado abajo. Podés firmar encima, agrandar el sello reemplazándolo, o limpiar todo y empezar de nuevo.</p>'
+    : '<p class="resumen-vacio" style="margin:0;">Todavía no tenés ninguna firma guardada.</p>';
 
-  const tabDibujar = document.getElementById('tab-dibujar-firma');
-  const tabSubir = document.getElementById('tab-subir-firma');
-  const panelDibujar = document.getElementById('panel-dibujar-firma');
-  const panelSubir = document.getElementById('panel-subir-firma');
-
-  tabDibujar.addEventListener('click', () => {
-    tabDibujar.classList.replace('btn-secundario', 'btn-primario');
-    tabSubir.classList.replace('btn-primario', 'btn-secundario');
-    panelDibujar.classList.remove('oculto');
-    panelSubir.classList.add('oculto');
-  });
-  tabSubir.addEventListener('click', () => {
-    tabSubir.classList.replace('btn-secundario', 'btn-primario');
-    tabDibujar.classList.replace('btn-primario', 'btn-secundario');
-    panelSubir.classList.remove('oculto');
-    panelDibujar.classList.add('oculto');
-  });
-  tabDibujar.classList.replace('btn-secundario', 'btn-primario');
-
-  // --- Dibujar con mouse o dedo ---
   const canvas = document.getElementById('canvas-firma');
   const ctx = canvas.getContext('2d');
   ctx.lineWidth = 2.4;
@@ -3340,6 +3322,29 @@ function inicializarModuloFirma(firmaActual) {
   ctx.strokeStyle = '#1C2421';
   let dibujando = false;
   let huboTrazo = false;
+  let imagenFondo = null; // Image cargada como fondo, o null si no hay
+
+  function redibujarFondo() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    if (imagenFondo) {
+      // Centramos la imagen de fondo manteniendo su proporción.
+      const escala = Math.min(canvas.width / imagenFondo.width, canvas.height / imagenFondo.height);
+      const w = imagenFondo.width * escala;
+      const h = imagenFondo.height * escala;
+      ctx.drawImage(imagenFondo, (canvas.width - w) / 2, (canvas.height - h) / 2, w, h);
+    }
+  }
+
+  // Precargamos la firma/sello actual como fondo, para que el
+  // profesional pueda firmar directamente encima sin perderla.
+  if (firmaActual) {
+    const imgPrevia = new Image();
+    imgPrevia.onload = () => {
+      imagenFondo = imgPrevia;
+      redibujarFondo();
+    };
+    imgPrevia.src = firmaActual;
+  }
 
   function posicionDesdeEvento(e) {
     const rect = canvas.getBoundingClientRect();
@@ -3373,25 +3378,46 @@ function inicializarModuloFirma(firmaActual) {
   canvas.addEventListener('touchmove', seguirTrazo, { passive: false });
   canvas.addEventListener('touchend', terminarTrazo);
 
+  // --- Cargar imagen de fondo (sello escaneado) ---
+  document.getElementById('input-imagen-fondo-firma').addEventListener('change', (e) => {
+    const archivo = e.target.files && e.target.files[0];
+    if (!archivo) return;
+    if (archivo.size > 1.5 * 1024 * 1024) {
+      mostrarToast('La imagen pesa demasiado. Probá con una más liviana.', 'error');
+      e.target.value = '';
+      return;
+    }
+    const lector = new FileReader();
+    lector.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        imagenFondo = img;
+        redibujarFondo();
+      };
+      img.src = lector.result;
+    };
+    lector.readAsDataURL(archivo);
+  });
+
+  document.getElementById('btn-quitar-imagen-fondo').addEventListener('click', () => {
+    imagenFondo = null;
+    document.getElementById('input-imagen-fondo-firma').value = '';
+    redibujarFondo();
+  });
+
   document.getElementById('btn-limpiar-firma').addEventListener('click', () => {
+    imagenFondo = null;
+    document.getElementById('input-imagen-fondo-firma').value = '';
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     huboTrazo = false;
   });
 
   document.getElementById('btn-guardar-firma-dibujada').addEventListener('click', async () => {
-    if (!huboTrazo) { mostrarToast('Dibujá tu firma antes de guardar.', 'error'); return; }
+    if (!huboTrazo && !imagenFondo) {
+      mostrarToast('Dibujá tu firma, o subí una imagen de tu sello, antes de guardar.', 'error');
+      return;
+    }
     await guardarFirma(canvas.toDataURL('image/png'));
-  });
-
-  // --- Subir imagen ---
-  document.getElementById('btn-guardar-firma-subida').addEventListener('click', async () => {
-    const input = document.getElementById('input-subir-firma');
-    const archivo = input.files && input.files[0];
-    if (!archivo) { mostrarToast('Elegí una imagen de tu firma.', 'error'); return; }
-    if (archivo.size > 1.5 * 1024 * 1024) { mostrarToast('La imagen pesa demasiado. Probá con una más liviana.', 'error'); return; }
-    const lector = new FileReader();
-    lector.onload = () => guardarFirma(lector.result);
-    lector.readAsDataURL(archivo);
   });
 
   const btnQuitar = document.getElementById('btn-quitar-firma');
