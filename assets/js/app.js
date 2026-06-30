@@ -3166,7 +3166,7 @@ async function montarVistaMiLegajo(contenido) {
           <div class="dato-box"><div class="etiqueta-dato">Lugar de nacimiento</div><div class="valor-dato">${escaparHtml(l.lugar_nacimiento || '—')}</div></div>
           <div class="dato-box" style="grid-column: span 2;"><div class="etiqueta-dato">Correo</div><div class="valor-dato" style="word-break:break-all;">${escaparHtml(l.email || '—')}</div></div>
           <div class="dato-box"><div class="etiqueta-dato">Celular</div><div class="valor-dato">${escaparHtml(l.telefono || '—')}</div></div>
-          <div class="dato-box"><div class="etiqueta-dato">Licencia</div><div class="valor-dato">${venc}</div></div>
+          <div class="dato-box" style="grid-column: span 2;"><div class="etiqueta-dato">Licencia</div><div class="valor-dato">${venc}</div></div>
         </div>
         <p style="font-size:0.82rem; color:var(--tinta-suave); margin-top:8px;">Si necesitás corregir algún dato, comunicate con el administrador del sistema.</p>
       </div>`;

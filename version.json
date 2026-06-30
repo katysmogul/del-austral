@@ -1,10 +1,10 @@
 {
-  "version": "v21",
+  "version": "v22",
   "fecha": "2026-06-30",
-  "descripcion": "El Desarrollador puede renombrar una sede sin perder legajos vinculados, y la pantalla de acceso ya no muestra 'Desarrollador' — ahora hay un botón discreto 'Mantenimiento' fijo arriba",
+  "descripcion": "Arregla el texto de licencia en Mi legajo, que se cortaba mal cuando decía 'Sin vencimiento (indeterminada)'",
   "archivos_criticos": {
     "index.html": "e3c7585d7aeeffa597d277247d77e07e",
-    "assets/js/app.js": "17c993da060d133fc951c2c73237c053",
+    "assets/js/app.js": "3c5ba080ea3c22a6a69a73f3ae30c69d",
     "assets/css/estilos.css": "60de9e4c4073cd4a57c0c081577d0d25",
     "api/auth.php": "702ce82cdca08bef95a10e0821c4dc52",
     "api/citas.php": "7622c3facffd9fb671fa63494be56124",
