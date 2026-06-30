@@ -65,6 +65,7 @@ CREATE TABLE IF NOT EXISTS usuarios_sedes (
 CREATE TABLE IF NOT EXISTS profesionales_legajos (
     id INT PRIMARY KEY AUTO_INCREMENT,
     usuario_id INT NOT NULL UNIQUE,
+    numero_legajo VARCHAR(20) NULL UNIQUE,
     titulo ENUM('Dr.','Dra.','Lic.','Tec.','Mg.','Prof.','Otro') NOT NULL DEFAULT 'Dr.',
     nombre VARCHAR(80) NOT NULL,
     apellido VARCHAR(80) NOT NULL,
@@ -74,6 +75,7 @@ CREATE TABLE IF NOT EXISTS profesionales_legajos (
     especialidad VARCHAR(150) NULL,
     email VARCHAR(150) NULL,
     telefono VARCHAR(40) NULL,
+    firma_digital MEDIUMTEXT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id) ON DELETE CASCADE

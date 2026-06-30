@@ -183,3 +183,5 @@ Ideas pendientes, sin compromiso de implementación:
 [PolyForm Noncommercial 1.0.0](./LICENSE) — código fuente disponible para cualquier uso **no comercial**: estudio personal, proyectos propios sin fines de lucro, instituciones educativas, organizaciones de salud pública, ONGs y organismos de gobierno. Para uso comercial (ofrecerlo como servicio, instalarlo a terceros a cambio de un pago, integrarlo en un producto comercial) se necesita una licencia aparte — abrí un issue o contactá a quien mantiene este repositorio.
 
 ---
+
+Construido de forma iterativa junto a [Claude](https://claude.ai) (Anthropic).
