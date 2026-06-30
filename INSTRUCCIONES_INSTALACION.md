@@ -25,6 +25,7 @@ En phpMyAdmin, entrá a tu base de datos → pestaña **"SQL"** (no "Importar"),
 | `migracion_v11.sql` | Número de legajo automático (formato `LG-AAAA-NNN`) |
 | `migracion_v12.sql` | Firma digital del profesional |
 | `migracion_v13.sql` | Matrícula nacional/provincial y sello automático generado al crear el legajo |
+| `migracion_v14.sql` | Constancias médicas (Servicios Plus) con validación por token |
 
 Ninguna de estas migraciones borra pacientes, sesiones, citas ni adjuntos existentes. Si no estás seguro de cuáles ya corriste, no pasa nada grave en correr una de nuevo por error — la mayoría usa `ALTER TABLE ... ADD COLUMN`, que falla de forma segura (sin romper nada) si la columna ya existe.
 
@@ -172,6 +173,28 @@ Del Austral se puede "instalar" en celular o computadora para que tenga su propi
 - **Computadora (Chrome/Edge)**: ícono de instalación en la barra de direcciones, o menú → "Instalar Del Austral".
 
 Si no aparece la opción de instalar, confirmá que el sitio funcione con HTTPS.
+
+---
+
+## Servicios Plus: Constancia médica
+
+Desde el panel principal del profesional, "Servicios Plus" → "Constancia médica" genera un justificante de asistencia exportable a PDF, con el membrete de la sede, el sello/firma del profesional, y un token de validación pública.
+
+**Cómo funciona:**
+1. El profesional elige si busca un legajo existente (autocompleta nombre y DNI) o carga los datos a mano (sin necesidad de legajo).
+2. Completa, opcionalmente, ciudad de nacimiento y el lugar de trabajo/institución a la que va dirigida (si no lo completa, dice "ante las autoridades que lo requieran"; si lo completa, dice "ante las autoridades de [eso]").
+3. La fecha de consulta y la sede se completan solas (hoy, y la sede donde el profesional inició sesión).
+4. Al generar, se abre la vista de impresión del PDF, con el sello/firma del profesional al pie.
+
+**Validación pública:** cada constancia tiene un token único (formato `XXXX-XXXX-XXXX`) impreso al pie del PDF, junto con un link a `validar_constancia.php`. Cualquiera que reciba el documento puede entrar a esa página, escribir el token, y ver los datos reales guardados en el sistema (paciente, fecha, profesional, sede) para confirmar que no fueron alterados.
+
+**Vencimiento automático a los 90 días:** pasado ese plazo, la constancia deja de ser válida. Para que se borre automáticamente del sistema (dejando solo un rastro interno mínimo para auditoría, nunca visible públicamente), hace falta programar un cron que corra `cron_limpiar_constancias.php` una vez al día:
+
+```bash
+0 4 * * * php /ruta/a/tu/proyecto/cron_limpiar_constancias.php >> /var/log/limpiar-constancias.log 2>&1
+```
+
+Si no programás este cron, las constancias vencidas simplemente van a mostrar "vencida" al validarlas (porque el sistema compara la fecha igual), pero no se van a borrar de la base de datos hasta que el cron corra al menos una vez.
 
 ---
 

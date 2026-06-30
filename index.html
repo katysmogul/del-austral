@@ -320,6 +320,14 @@
       <p>Tus datos profesionales registrados en el sistema. Solo lectura.</p>
       <span class="ir">Ver →</span>
     </button>
+    <button class="tarjeta-menu" data-vista="servicios-plus" data-rol="profesional">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+      </div>
+      <h3>Servicios Plus</h3>
+      <p>Constancias y certificados para tus pacientes, validables con un token único.</p>
+      <span class="ir">Ver →</span>
+    </button>
   </div>
 </template>
 
@@ -641,6 +649,99 @@
   </div>
   <div id="contenido-mi-legajo">
     <div class="cargando-pagina"><span class="spinner"></span></div>
+  </div>
+</template>
+
+<template id="tpl-servicios-plus">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver al panel
+      </button>
+      <h2>Servicios Plus</h2>
+      <p class="desc">Documentos y certificados adicionales para tus pacientes.</p>
+    </div>
+  </div>
+
+  <div class="grilla-menu" style="grid-template-columns: repeat(auto-fill, minmax(220px, 280px)); margin-bottom: 32px;">
+    <button class="tarjeta-menu" id="btn-ir-constancia-medica">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6m-6 4h6M9 8h1M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2h-4l-2-2H9L7 5H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      <h3>Constancia médica</h3>
+      <p>Justificante de asistencia, exportable a PDF y validable con un token único.</p>
+      <span class="ir">Crear →</span>
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-titulo">Constancias emitidas</div>
+    <p class="panel-subtitulo">Las constancias se eliminan automáticamente 90 días después de emitidas.</p>
+    <div id="lista-constancias-emitidas"><div class="cargando-pagina chico"><span class="spinner"></span></div></div>
+  </div>
+</template>
+
+<template id="tpl-constancia-medica">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver-vista="servicios-plus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver a Servicios Plus
+      </button>
+      <h2>Constancia médica</h2>
+      <p class="desc">Justificante de asistencia a consulta, listo para exportar a PDF.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="campo" style="margin-bottom: 20px;">
+      <label>¿Cómo querés completar los datos del paciente?</label>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn btn-secundario btn-chico" id="btn-modo-con-legajo" type="button">Buscar en mis legajos</button>
+        <button class="btn btn-secundario btn-chico" id="btn-modo-sin-legajo" type="button">Sin necesidad de legajo</button>
+      </div>
+    </div>
+
+    <div id="bloque-buscar-legajo-constancia" class="oculto campo" style="margin-bottom: 20px;">
+      <label>Buscar paciente</label>
+      <input type="search" id="input-buscar-paciente-constancia" placeholder="Nombre o DNI…" autocomplete="off">
+      <div id="resultados-busqueda-paciente-constancia" class="lista-resultados" style="margin-top:10px;"></div>
+      <div id="paciente-elegido-constancia" class="oculto" style="margin-top:12px; padding:12px 16px; background:var(--crema); border-radius:var(--radio-chico);"></div>
+    </div>
+
+    <form id="form-constancia-medica" class="oculto">
+      <div class="grilla-campos" style="margin-bottom: 14px;">
+        <div class="campo ancho-completo">
+          <label>Nombre y apellido completo</label>
+          <input type="text" id="input-nombre-constancia">
+        </div>
+        <div class="campo">
+          <label>DNI o CUIL</label>
+          <input type="text" id="input-dni-constancia">
+        </div>
+        <div class="campo">
+          <label>Ciudad y provincia de nacimiento (opcional)</label>
+          <input type="text" id="input-lugarnac-constancia" placeholder="Ej: Comodoro Rivadavia, Chubut">
+        </div>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Lugar de trabajo o institución (opcional)</label>
+        <input type="text" id="input-lugartrabajo-constancia" placeholder="Dejalo vacío para 'ante las autoridades que lo requieran'">
+        <span class="ayuda">Si lo completás, el certificado va a decir "ante las autoridades de [esto]" en vez del texto genérico.</span>
+      </div>
+
+      <div class="campo" style="margin-bottom: 8px;">
+        <label>Fecha de la consulta</label>
+        <input type="text" value="Hoy" disabled style="background:var(--crema); color:var(--tinta-suave);">
+        <span class="ayuda">Se completa automáticamente con la fecha de hoy.</span>
+      </div>
+
+      <div class="acciones-modal" style="justify-content:flex-start; margin-top:24px;">
+        <button type="submit" class="btn btn-primario" id="btn-confirmar-constancia">Generar constancia</button>
+      </div>
+    </form>
   </div>
 </template>
 

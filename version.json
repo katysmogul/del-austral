@@ -1,17 +1,20 @@
 {
-  "version": "v28",
+  "version": "v31",
   "fecha": "2026-06-30",
-  "descripcion": "El sello automático ahora muestra el título junto al nombre (ej: 'Dr. Juan Pérez'), con la especialidad sola debajo, como en un sello real",
+  "descripcion": "El pie de la constancia médica ahora menciona la firma electrónica del profesional (validable por token), en vez de citar una ley de firma digital que no aplica técnicamente",
   "archivos_criticos": {
-    "index.html": "36c702a69103dc0a12acfa0ab669c0c8",
-    "assets/js/app.js": "d07d9460be9f1998061979aa5e96f8ea",
+    "index.html": "6d1a2edeeaed1b0f7e9962c7f9a62122",
+    "assets/js/app.js": "a579b7e0b58f2356161d80414f6eaa6d",
     "assets/css/estilos.css": "b4b8ff61d69a0782528ccdc3d4ad4e78",
     "api/auth.php": "ae4c6fa7926cce80520b6ccb02f98ce0",
     "api/citas.php": "7622c3facffd9fb671fa63494be56124",
     "api/pacientes.php": "df7de793317e8229120119a5050c44c2",
     "api/adjuntos.php": "8da3f85e26239072953298c60dcb5540",
     "api/admin.php": "b0f9dbf5039e62dc5c0692268ce46613",
+    "api/constancias.php": "86a4ca4fe62bc7f8524e78718787becb",
     "confirmar_turno.php": "ad6a798a41a594bb5dcc797295222cce",
-    "exportar.php": "1f6661903954229762d858d2f179da94"
+    "exportar.php": "1f6661903954229762d858d2f179da94",
+    "exportar_constancia.php": "dfc30f6497e2e9ce09e579832590426c",
+    "validar_constancia.php": "6358703c818e5efcfb2543c6c5c7da23"
   }
 }

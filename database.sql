@@ -241,6 +241,38 @@ CREATE TABLE IF NOT EXISTS plantillas_evolucion (
 -- ------------------------------------------------------------
 -- Tabla: historial_cambios (auditoría de quién hizo qué)
 -- ------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS constancias (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    token VARCHAR(40) NOT NULL UNIQUE,
+    profesional_id INT NOT NULL,
+    sede_id INT NOT NULL,
+    paciente_id INT NULL,
+    nombre_completo VARCHAR(200) NOT NULL,
+    dni VARCHAR(20) NOT NULL,
+    lugar_nacimiento VARCHAR(150) NULL,
+    fecha_consulta DATE NOT NULL,
+    destino TEXT NOT NULL,
+    lugar_destino VARCHAR(200) NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    vence_en DATE NOT NULL,
+    FOREIGN KEY (profesional_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (sede_id) REFERENCES sedes(id) ON DELETE CASCADE,
+    FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE SET NULL,
+    INDEX idx_token (token),
+    INDEX idx_vence_en (vence_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS constancias_historico (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    token VARCHAR(40) NOT NULL,
+    profesional_id INT NULL,
+    nombre_completo VARCHAR(200) NOT NULL,
+    dni VARCHAR(20) NOT NULL,
+    emitida_en TIMESTAMP NOT NULL,
+    vencio_en DATE NOT NULL,
+    INDEX idx_token_historico (token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE IF NOT EXISTS historial_cambios (
     id INT PRIMARY KEY AUTO_INCREMENT,
     usuario_id INT NULL,

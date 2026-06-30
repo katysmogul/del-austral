@@ -10,6 +10,7 @@ const API = {
   adjuntos: 'api/adjuntos.php',
   plantillas: 'api/plantillas.php',
   admin: 'api/admin.php',
+  constancias: 'api/constancias.php',
 };
 
 let CACHE_OBRAS_SOCIALES = [];
@@ -495,11 +496,16 @@ function irAVista(nombre, datos = {}) {
     montarVistaDashboard(contenido);
   } else if (nombre === 'mi-legajo') {
     montarVistaMiLegajo(contenido);
+  } else if (nombre === 'servicios-plus') {
+    montarVistaServiciosPlus(contenido);
+  } else if (nombre === 'constancia-medica') {
+    montarVistaConstanciaMedica(contenido);
   } else if (nombre === 'configuracion') {
     montarVistaConfiguracion(contenido);
   }
 
   contenido.querySelectorAll('[data-volver]').forEach(b => b.addEventListener('click', () => irAVista(ROL_ACTUAL === 'desarrollador' ? 'configuracion' : 'menu')));
+  contenido.querySelectorAll('[data-volver-vista]').forEach(b => b.addEventListener('click', () => irAVista(b.dataset.volverVista)));
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -3245,6 +3251,162 @@ function abrirModalGestionarLicencia(usuario) {
       mostrarToast(e.message, 'error');
       btn.disabled = false;
       btn.textContent = 'Guardar';
+    }
+  });
+}
+
+async function montarVistaServiciosPlus(contenido) {
+  contenido.appendChild(clonarPlantilla('tpl-servicios-plus'));
+
+  document.getElementById('btn-ir-constancia-medica').addEventListener('click', () => irAVista('constancia-medica'));
+
+  const cont = document.getElementById('lista-constancias-emitidas');
+  try {
+    const res = await llamarApi(`${API.constancias}?accion=listar`, { method: 'GET' });
+    if (!res.datos.length) {
+      cont.innerHTML = '<p class="resumen-vacio">Todavía no emitiste ninguna constancia.</p>';
+      return;
+    }
+    cont.innerHTML = '';
+    res.datos.forEach(c => {
+      const fila = document.createElement('div');
+      fila.className = 'tarjeta-paciente';
+      const vencimiento = new Date(c.vence_en + 'T00:00:00').toLocaleDateString('es-AR');
+      fila.innerHTML = `
+        <div class="info-principal">
+          <div class="avatar-iniciales">${escaparHtml(c.nombre_completo.split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase())}</div>
+          <div>
+            <div class="nombre">${escaparHtml(c.nombre_completo)}</div>
+            <div class="meta">DNI ${escaparHtml(c.dni)} · Token ${escaparHtml(c.token)} · Vence el ${vencimiento}</div>
+          </div>
+        </div>
+        <div class="acciones-tarjeta"></div>
+      `;
+      const btnVer = document.createElement('button');
+      btnVer.className = 'btn btn-secundario btn-chico';
+      btnVer.textContent = 'Ver / Imprimir';
+      btnVer.addEventListener('click', () => window.open(`exportar_constancia.php?id=${c.id}`, '_blank'));
+      fila.querySelector('.acciones-tarjeta').appendChild(btnVer);
+      cont.appendChild(fila);
+    });
+  } catch (e) {
+    cont.innerHTML = '';
+    mostrarToast(e.message, 'error');
+  }
+}
+
+function montarVistaConstanciaMedica(contenido) {
+  contenido.appendChild(clonarPlantilla('tpl-constancia-medica'));
+
+  const bloqueBuscar = document.getElementById('bloque-buscar-legajo-constancia');
+  const form = document.getElementById('form-constancia-medica');
+  const pacienteElegidoDiv = document.getElementById('paciente-elegido-constancia');
+  let pacienteIdElegido = null;
+
+  function mostrarFormulario() {
+    form.classList.remove('oculto');
+  }
+
+  document.getElementById('btn-modo-con-legajo').addEventListener('click', () => {
+    bloqueBuscar.classList.remove('oculto');
+    form.classList.add('oculto');
+    pacienteIdElegido = null;
+  });
+
+  document.getElementById('btn-modo-sin-legajo').addEventListener('click', () => {
+    bloqueBuscar.classList.add('oculto');
+    pacienteIdElegido = null;
+    document.getElementById('input-nombre-constancia').value = '';
+    document.getElementById('input-dni-constancia').value = '';
+    document.getElementById('input-nombre-constancia').disabled = false;
+    document.getElementById('input-dni-constancia').disabled = false;
+    mostrarFormulario();
+  });
+
+  // --- Buscador de paciente existente ---
+  const inputBuscar = document.getElementById('input-buscar-paciente-constancia');
+  const resultadosDiv = document.getElementById('resultados-busqueda-paciente-constancia');
+  let temporizadorBusqueda = null;
+
+  inputBuscar.addEventListener('input', () => {
+    clearTimeout(temporizadorBusqueda);
+    const valor = inputBuscar.value.trim();
+    if (!valor) { resultadosDiv.innerHTML = ''; return; }
+    temporizadorBusqueda = setTimeout(async () => {
+      try {
+        const esDni = /^\d+$/.test(valor);
+        const res = await llamarApi(`${API.pacientes}?accion=buscar&tipo=${esDni ? 'dni' : 'nombre'}&valor=${encodeURIComponent(valor)}`, { method: 'GET' });
+        resultadosDiv.innerHTML = '';
+        if (!res.datos.length) {
+          resultadosDiv.innerHTML = '<p class="resumen-vacio" style="margin:0;">Sin resultados.</p>';
+          return;
+        }
+        res.datos.slice(0, 8).forEach(p => {
+          const item = document.createElement('div');
+          item.className = 'tarjeta-paciente';
+          item.style.cursor = 'pointer';
+          item.innerHTML = `
+            <div class="info-principal">
+              <div class="avatar-iniciales">${escaparHtml((p.nombre[0] + p.apellido[0]).toUpperCase())}</div>
+              <div>
+                <div class="nombre">${escaparHtml(p.nombre)} ${escaparHtml(p.apellido)}</div>
+                <div class="meta">DNI ${escaparHtml(p.dni)}</div>
+              </div>
+            </div>
+          `;
+          item.addEventListener('click', () => {
+            pacienteIdElegido = p.id;
+            inputBuscar.value = '';
+            resultadosDiv.innerHTML = '';
+            pacienteElegidoDiv.classList.remove('oculto');
+            pacienteElegidoDiv.innerHTML = `Paciente elegido: <strong>${escaparHtml(p.nombre)} ${escaparHtml(p.apellido)}</strong> (DNI ${escaparHtml(p.dni)})`;
+            document.getElementById('input-nombre-constancia').value = `${p.nombre} ${p.apellido}`;
+            document.getElementById('input-dni-constancia').value = p.dni;
+            document.getElementById('input-nombre-constancia').disabled = true;
+            document.getElementById('input-dni-constancia').disabled = true;
+            mostrarFormulario();
+          });
+          resultadosDiv.appendChild(item);
+        });
+      } catch (e) {
+        resultadosDiv.innerHTML = '';
+      }
+    }, 300);
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombreCompleto = document.getElementById('input-nombre-constancia').value.trim();
+    const dni = document.getElementById('input-dni-constancia').value.trim();
+    const lugarNacimiento = document.getElementById('input-lugarnac-constancia').value.trim();
+    const lugarTrabajo = document.getElementById('input-lugartrabajo-constancia').value.trim();
+
+    if (!nombreCompleto || !dni) {
+      mostrarToast('Completá el nombre y el DNI del paciente.', 'error');
+      return;
+    }
+
+    const btn = document.getElementById('btn-confirmar-constancia');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generando...';
+    try {
+      const res = await llamarApi(`${API.constancias}?accion=crear`, {
+        method: 'POST',
+        body: JSON.stringify({
+          paciente_id: pacienteIdElegido,
+          nombre_completo: nombreCompleto,
+          dni,
+          lugar_nacimiento: lugarNacimiento,
+          lugar_trabajo: lugarTrabajo,
+        }),
+      });
+      mostrarToast('Constancia generada correctamente.', 'exito');
+      window.open(`exportar_constancia.php?id=${res.id}`, '_blank');
+      irAVista('servicios-plus');
+    } catch (e) {
+      mostrarToast(e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Generar constancia';
     }
   });
 }
