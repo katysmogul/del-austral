@@ -1,7 +1,7 @@
 {
-  "version": "v31",
+  "version": "v32",
   "fecha": "2026-06-30",
-  "descripcion": "El pie de la constancia médica ahora menciona la firma electrónica del profesional (validable por token), en vez de citar una ley de firma digital que no aplica técnicamente",
+  "descripcion": "La constancia médica ya no se parte en 2 hojas al imprimir/exportar a PDF (faltaba page-break-inside y los márgenes verticales eran muy grandes)",
   "archivos_criticos": {
     "index.html": "6d1a2edeeaed1b0f7e9962c7f9a62122",
     "assets/js/app.js": "a579b7e0b58f2356161d80414f6eaa6d",
@@ -14,7 +14,7 @@
     "api/constancias.php": "86a4ca4fe62bc7f8524e78718787becb",
     "confirmar_turno.php": "ad6a798a41a594bb5dcc797295222cce",
     "exportar.php": "1f6661903954229762d858d2f179da94",
-    "exportar_constancia.php": "dfc30f6497e2e9ce09e579832590426c",
+    "exportar_constancia.php": "33e5bc1b35bd20b15425617a45756e50",
     "validar_constancia.php": "6358703c818e5efcfb2543c6c5c7da23"
   }
 }

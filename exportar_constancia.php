@@ -64,9 +64,12 @@ $urlValidacion = 'https://' . $_SERVER['HTTP_HOST'] . '/validar_constancia.php?t
 <title>Constancia de asistencia — <?= e($constancia['nombre_completo']) ?></title>
 <style>
   @media print {
-    @page { margin: 18mm 18mm; }
+    @page { margin: 16mm 18mm; }
     .barra-exportar { display: none !important; }
     body { padding: 0 !important; }
+    .encabezado-doc, .titulo-constancia, .cuerpo-constancia, .bloque-firma, .bloque-validacion, .pie-pdf {
+      page-break-inside: avoid;
+    }
   }
   * { box-sizing: border-box; }
   body {
@@ -104,8 +107,8 @@ $urlValidacion = 'https://' . $_SERVER['HTTP_HOST'] . '/validar_constancia.php?t
     justify-content: space-between;
     align-items: flex-start;
     border-bottom: 3px solid #3D6B63;
-    padding-bottom: 14px;
-    margin-bottom: 36px;
+    padding-bottom: 12px;
+    margin-bottom: 26px;
   }
   .encabezado-doc h1 { font-size: 1.4rem; margin: 0 0 4px; color: #2A4B45; }
   .encabezado-doc .profesional { font-size: 0.85rem; color: #4A5650; }
@@ -117,7 +120,7 @@ $urlValidacion = 'https://' . $_SERVER['HTTP_HOST'] . '/validar_constancia.php?t
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.04em;
-    margin-bottom: 30px;
+    margin-bottom: 22px;
     color: #2A4B45;
   }
 
@@ -125,10 +128,10 @@ $urlValidacion = 'https://' . $_SERVER['HTTP_HOST'] . '/validar_constancia.php?t
     font-size: 1rem;
     text-align: justify;
   }
-  .cuerpo-constancia p { margin: 0 0 18px; }
+  .cuerpo-constancia p { margin: 0 0 16px; }
 
   .bloque-firma {
-    margin-top: 60px;
+    margin-top: 40px;
     width: 300px;
     text-align: center;
     margin-left: auto;
@@ -145,8 +148,8 @@ $urlValidacion = 'https://' . $_SERVER['HTTP_HOST'] . '/validar_constancia.php?t
   .aclaracion-firma { font-size: 0.75rem; color: #4A5650; margin-top: 2px; }
 
   .bloque-validacion {
-    margin-top: 50px;
-    padding: 16px 18px;
+    margin-top: 30px;
+    padding: 14px 18px;
     background: #F7F4ED;
     border: 1px solid #DDD6C7;
     border-radius: 10px;
