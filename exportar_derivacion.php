@@ -6,7 +6,7 @@ if (empty($_SESSION['autenticado']) || ($_SESSION['rol'] ?? '') !== 'profesional
     echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>Acceso no disponible</title></head>
     <body style="font-family: Arial, sans-serif; max-width: 480px; margin: 80px auto; text-align: center; color: #1C2421;">
     <h2>No tenés permiso para ver este documento</h2>
-    <p style="color:#4A5650;">La exportación de constancias está disponible solo para el usuario profesional.</p>
+    <p style="color:#4A5650;">La exportación de resúmenes de derivación está disponible solo para el usuario profesional.</p>
     </body></html>';
     exit;
 }
@@ -16,19 +16,19 @@ $id = $_GET['id'] ?? 0;
 $profesionalActivoId = idProfesionalActivo();
 
 $stmt = $pdo->prepare('
-    SELECT c.*, s.nombre AS sede_nombre
-    FROM constancias c
-    INNER JOIN sedes s ON s.id = c.sede_id
-    WHERE c.id = ? AND c.profesional_id = ?
+    SELECT d.*, s.nombre AS sede_nombre
+    FROM resumenes_derivacion d
+    INNER JOIN sedes s ON s.id = d.sede_id
+    WHERE d.id = ? AND d.profesional_id = ?
 ');
 $stmt->execute([$id, $profesionalActivoId]);
-$constancia = $stmt->fetch();
+$derivacion = $stmt->fetch();
 
-if (!$constancia) {
+if (!$derivacion) {
     http_response_code(404);
-    echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>No encontrada</title></head>
+    echo '<!DOCTYPE html><html lang="es"><head><meta charset="UTF-8"><title>No encontrado</title></head>
     <body style="font-family: Arial, sans-serif; max-width: 480px; margin: 80px auto; text-align: center; color: #1C2421;">
-    <h2>Constancia no encontrada</h2>
+    <h2>Resumen de derivación no encontrado</h2>
     </body></html>';
     exit;
 }
@@ -53,28 +53,18 @@ function fechaLegible($fechaIso) {
     if (count($partes) !== 3) return e($fechaIso);
     return (int)$partes[2] . ' de ' . $meses[(int)$partes[1] - 1] . ' de ' . $partes[0];
 }
-
-$generoSufijo = 'el/la'; // El sistema no guarda sexo en datos manuales; mantenemos lenguaje inclusivo.
-$urlValidacion = 'https://' . $_SERVER['HTTP_HOST'] . '/validar_constancia.php?token=' . urlencode($constancia['token']);
-
-$tituloPorTipo = [
-    'asistencia' => 'Constancia de Asistencia',
-    'tratamiento' => 'Constancia de Tratamiento Prolongado',
-    'receta' => 'Receta',
-];
-$tituloDoc = $tituloPorTipo[$constancia['tipo']] ?? 'Constancia';
 ?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title><?= e($tituloDoc) ?> — <?= e($constancia['nombre_completo']) ?></title>
+<title>Resumen de derivación — <?= e($derivacion['nombre_completo']) ?></title>
 <style>
   @media print {
     @page { margin: 16mm 18mm; }
     .barra-exportar { display: none !important; }
     body { padding: 0 !important; }
-    .encabezado-doc, .titulo-constancia, .cuerpo-constancia, .bloque-firma, .bloque-validacion, .pie-pdf {
+    .encabezado-doc, .bloque-pdf, .bloque-firma {
       page-break-inside: avoid;
     }
   }
@@ -85,7 +75,7 @@ $tituloDoc = $tituloPorTipo[$constancia['tipo']] ?? 'Constancia';
     max-width: 740px;
     margin: 0 auto;
     padding: 30px 24px 60px;
-    line-height: 1.6;
+    line-height: 1.5;
   }
   .barra-exportar {
     position: sticky;
@@ -121,7 +111,7 @@ $tituloDoc = $tituloPorTipo[$constancia['tipo']] ?? 'Constancia';
   .encabezado-doc .profesional { font-size: 0.85rem; color: #4A5650; }
   .encabezado-doc .fecha-emision { font-size: 0.8rem; color: #4A5650; text-align: right; }
 
-  .titulo-constancia {
+  .titulo-doc {
     text-align: center;
     font-size: 1.15rem;
     font-weight: 700;
@@ -131,11 +121,39 @@ $tituloDoc = $tituloPorTipo[$constancia['tipo']] ?? 'Constancia';
     color: #2A4B45;
   }
 
-  .cuerpo-constancia {
-    font-size: 1rem;
-    text-align: justify;
+  .destinatario-derivacion {
+    font-size: 0.92rem;
+    color: #4A5650;
+    margin-bottom: 24px;
   }
-  .cuerpo-constancia p { margin: 0 0 16px; }
+
+  .grilla-datos-pdf {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+  .dato-pdf {
+    background: #F7F4ED;
+    border: 1px solid #DDD6C7;
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .dato-pdf .etq { font-size: 0.68rem; text-transform: uppercase; color: #4A5650; font-weight: 700; letter-spacing: 0.04em; }
+  .dato-pdf .val { font-size: 0.95rem; font-weight: 600; margin-top: 2px; }
+
+  .bloque-pdf { margin-bottom: 18px; }
+  .bloque-pdf h3 {
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #2A4B45;
+    border-bottom: 1px solid #DDD6C7;
+    padding-bottom: 4px;
+    margin-bottom: 8px;
+  }
+  .bloque-pdf p { margin: 0; white-space: pre-wrap; font-size: 0.92rem; }
+  .bloque-pdf p.vacio { color: #4A5650; font-style: italic; }
 
   .bloque-firma {
     margin-top: 40px;
@@ -153,19 +171,6 @@ $tituloDoc = $tituloPorTipo[$constancia['tipo']] ?? 'Constancia';
   .linea-firma { border-top: 1.5px solid #1C2421; margin-bottom: 8px; }
   .nombre-firma { font-weight: 700; font-size: 0.92rem; }
   .aclaracion-firma { font-size: 0.75rem; color: #4A5650; margin-top: 2px; }
-
-  .bloque-validacion {
-    margin-top: 30px;
-    padding: 14px 18px;
-    background: #F7F4ED;
-    border: 1px solid #DDD6C7;
-    border-radius: 10px;
-    font-size: 0.82rem;
-    color: #2A4B45;
-    text-align: center;
-  }
-  .bloque-validacion .token { font-family: 'Courier New', monospace; font-weight: 700; font-size: 1rem; letter-spacing: 0.05em; }
-  .bloque-validacion .link { word-break: break-all; color: #3D6B63; }
 
   .pie-pdf {
     margin-top: 40px;
@@ -191,60 +196,56 @@ $tituloDoc = $tituloPorTipo[$constancia['tipo']] ?? 'Constancia';
       <?php if (!empty($prof['especialidad'])): ?>
         <div class="profesional"><?= e($prof['especialidad']) ?></div>
       <?php endif; ?>
-      <div class="profesional"><?= e($constancia['sede_nombre']) ?></div>
+      <div class="profesional"><?= e($derivacion['sede_nombre']) ?></div>
     </div>
     <div class="fecha-emision">Documento generado el<br><?= fechaLegible(date('Y-m-d')) ?></div>
   </div>
 
-  <div class="titulo-constancia"><?= e($tituloDoc) ?></div>
+  <div class="titulo-doc">Resumen de Derivación</div>
 
-  <div class="cuerpo-constancia">
-    <?php if ($constancia['tipo'] === 'asistencia'): ?>
-      <p>
-        Por la presente se deja constancia de que <?= $generoSufijo ?> paciente <strong><?= e($constancia['nombre_completo']) ?></strong>,
-        DNI N.º <strong><?= e($constancia['dni']) ?></strong><?= $constancia['lugar_nacimiento'] ? ', nacido/a en ' . e($constancia['lugar_nacimiento']) : '' ?>,
-        es paciente de esta sede (<?= e($constancia['sede_nombre']) ?>).
-      </p>
-      <p>
-        Asimismo, se certifica que en la fecha <?= fechaLegible($constancia['fecha_consulta']) ?> el/la mencionado/a asistió a una consulta
-        en esta institución, la cual fue debidamente realizada.
-      </p>
-      <p>
-        El presente certificado se extiende a solicitud del/de la paciente, <?= e($constancia['destino']) ?>.
-      </p>
-      <p>Sin otro particular, saludo atentamente.</p>
+  <?php if ($derivacion['destinatario']): ?>
+    <div class="destinatario-derivacion">Dirigido a: <strong><?= e($derivacion['destinatario']) ?></strong></div>
+  <?php endif; ?>
 
-    <?php elseif ($constancia['tipo'] === 'tratamiento'): ?>
-      <p>
-        Por la presente se deja constancia de que <?= $generoSufijo ?> paciente <strong><?= e($constancia['nombre_completo']) ?></strong>,
-        DNI N.º <strong><?= e($constancia['dni']) ?></strong><?= $constancia['lugar_nacimiento'] ? ', nacido/a en ' . e($constancia['lugar_nacimiento']) : '' ?>,
-        se encuentra bajo tratamiento en esta sede (<?= e($constancia['sede_nombre']) ?>) desde el <?= fechaLegible($constancia['tratamiento_desde']) ?> a la fecha.
-      </p>
-      <?php if ($constancia['diagnostico']): ?>
-        <p><strong>Diagnóstico / motivo del tratamiento:</strong> <?= nl2br(e($constancia['diagnostico'])) ?></p>
-      <?php endif; ?>
-      <p>
-        Se certifica que dicho tratamiento se encuentra activo y bajo seguimiento profesional continuo a la fecha de emisión de este documento.
-      </p>
-      <p>
-        El presente certificado se extiende a solicitud del/de la paciente, <?= e($constancia['destino']) ?>.
-      </p>
-      <p>Sin otro particular, saludo atentamente.</p>
+  <div class="grilla-datos-pdf">
+    <div class="dato-pdf"><div class="etq">Paciente</div><div class="val"><?= e($derivacion['nombre_completo']) ?></div></div>
+    <div class="dato-pdf"><div class="etq">DNI</div><div class="val"><?= e($derivacion['dni']) ?></div></div>
+    <div class="dato-pdf"><div class="etq">Fecha</div><div class="val"><?= fechaLegible(date('Y-m-d')) ?></div></div>
+  </div>
 
-    <?php elseif ($constancia['tipo'] === 'receta'): ?>
-      <p>
-        Paciente: <strong><?= e($constancia['nombre_completo']) ?></strong> — DNI N.º <strong><?= e($constancia['dni']) ?></strong>
-      </p>
-      <p>
-        Fecha: <?= fechaLegible($constancia['fecha_consulta']) ?> — Sede: <?= e($constancia['sede_nombre']) ?>
-      </p>
-      <?php if ($constancia['diagnostico']): ?>
-        <p><strong>Diagnóstico / motivo:</strong> <?= nl2br(e($constancia['diagnostico'])) ?></p>
-      <?php endif; ?>
-      <p><strong>Indicaciones:</strong></p>
-      <p><?= nl2br(e($constancia['indicaciones'])) ?></p>
+  <div class="bloque-pdf">
+    <h3>Motivo de consulta</h3>
+    <?php if ($derivacion['motivo_consulta']): ?>
+      <p><?= nl2br(e($derivacion['motivo_consulta'])) ?></p>
+    <?php else: ?>
+      <p class="vacio">No se registró información.</p>
     <?php endif; ?>
   </div>
+
+  <div class="bloque-pdf">
+    <h3>Diagnóstico</h3>
+    <?php if ($derivacion['diagnostico']): ?>
+      <p><?= nl2br(e($derivacion['diagnostico'])) ?></p>
+    <?php else: ?>
+      <p class="vacio">No se registró información.</p>
+    <?php endif; ?>
+  </div>
+
+  <div class="bloque-pdf">
+    <h3>Tratamiento actual</h3>
+    <?php if ($derivacion['tratamiento_actual']): ?>
+      <p><?= nl2br(e($derivacion['tratamiento_actual'])) ?></p>
+    <?php else: ?>
+      <p class="vacio">No se registró información.</p>
+    <?php endif; ?>
+  </div>
+
+  <?php if ($derivacion['observaciones']): ?>
+    <div class="bloque-pdf">
+      <h3>Observaciones</h3>
+      <p><?= nl2br(e($derivacion['observaciones'])) ?></p>
+    </div>
+  <?php endif; ?>
 
   <div class="bloque-firma">
     <?php if (!empty($prof['firma_digital'])): ?>
@@ -255,16 +256,9 @@ $tituloDoc = $tituloPorTipo[$constancia['tipo']] ?? 'Constancia';
     <div class="aclaracion-firma">Profesional responsable del seguimiento clínico</div>
   </div>
 
-  <div class="bloque-validacion">
-    Este certificado puede ser validado en:<br>
-    <span class="link"><?= e($urlValidacion) ?></span><br>
-    Token de validación: <span class="token"><?= e($constancia['token']) ?></span><br>
-    Válido hasta el <?= fechaLegible($constancia['vence_en']) ?>.
-  </div>
-
   <div class="pie-pdf">
     Este documento contiene información personal protegida por la Ley N.º 25.326 de Protección de Datos Personales.
-    Lleva la firma electrónica del profesional, validable mediante el token incluido más arriba.
+    Documento de uso entre profesionales/instituciones de salud, sin validación pública por token.
   </div>
 
   <script>

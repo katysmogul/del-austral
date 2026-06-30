@@ -43,6 +43,17 @@ if ($token !== '') {
         $estadoBusqueda = $stmtHist->fetch() ? 'vencido_sin_datos' : 'no_encontrado';
     }
 }
+
+$tituloPorTipoPublico = [
+    'asistencia' => 'Constancia de Asistencia',
+    'tratamiento' => 'Constancia de Tratamiento Prolongado',
+    'receta' => 'Receta',
+];
+$etiquetaFechaPorTipo = [
+    'asistencia' => 'Fecha de la consulta',
+    'tratamiento' => 'En tratamiento desde',
+    'receta' => 'Fecha de emisión',
+];
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -129,7 +140,7 @@ if ($token !== '') {
 
     <?php if ($estadoBusqueda === 'valido'): ?>
       <div class="resultado">
-        <span class="estado-pill estado-valido">✓ Constancia válida</span>
+        <span class="estado-pill estado-valido">✓ <?= e($tituloPorTipoPublico[$constancia['tipo']] ?? 'Constancia') ?> válida</span>
         <div class="dato-fila">
           <div class="etq">Paciente</div>
           <div class="val"><?= e($constancia['nombre_completo']) ?></div>
@@ -139,8 +150,8 @@ if ($token !== '') {
           <div class="val"><?= e($constancia['dni']) ?></div>
         </div>
         <div class="dato-fila">
-          <div class="etq">Fecha de la consulta</div>
-          <div class="val"><?= fechaLegiblePublicaConstancia($constancia['fecha_consulta']) ?></div>
+          <div class="etq"><?= e($etiquetaFechaPorTipo[$constancia['tipo']] ?? 'Fecha') ?></div>
+          <div class="val"><?= fechaLegiblePublicaConstancia($constancia['tipo'] === 'tratamiento' ? $constancia['tratamiento_desde'] : $constancia['fecha_consulta']) ?></div>
         </div>
         <div class="dato-fila">
           <div class="etq">Profesional</div>

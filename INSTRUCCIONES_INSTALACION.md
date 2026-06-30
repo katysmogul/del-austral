@@ -26,6 +26,7 @@ En phpMyAdmin, entrá a tu base de datos → pestaña **"SQL"** (no "Importar"),
 | `migracion_v12.sql` | Firma digital del profesional |
 | `migracion_v13.sql` | Matrícula nacional/provincial y sello automático generado al crear el legajo |
 | `migracion_v14.sql` | Constancias médicas (Servicios Plus) con validación por token |
+| `migracion_v15.sql` | Tratamiento prolongado, Receta y Resumen de derivación |
 
 Ninguna de estas migraciones borra pacientes, sesiones, citas ni adjuntos existentes. Si no estás seguro de cuáles ya corriste, no pasa nada grave en correr una de nuevo por error — la mayoría usa `ALTER TABLE ... ADD COLUMN`, que falla de forma segura (sin romper nada) si la columna ya existe.
 
@@ -176,7 +177,30 @@ Si no aparece la opción de instalar, confirmá que el sitio funcione con HTTPS.
 
 ---
 
-## Servicios Plus: Constancia médica
+## Servicios Plus
+
+Desde el panel principal del profesional, "Servicios Plus" agrupa cuatro documentos generables a partir de un legajo existente o cargando los datos a mano:
+
+| Documento | Token público | Vence a los 90 días |
+|---|---|---|
+| Constancia de asistencia | Sí | Sí |
+| Constancia de tratamiento prolongado | Sí | Sí |
+| Receta | Sí | Sí |
+| Resumen de derivación | No | No vence (queda guardado siempre) |
+
+**Constancia de asistencia**: justificante de que el paciente concurrió a una consulta en el día de la emisión.
+
+**Constancia de tratamiento prolongado**: certifica que el paciente está bajo tratamiento continuo desde una fecha de inicio, con diagnóstico opcional. Útil para trámites de obra social o certificados de discapacidad.
+
+**Receta**: indicaciones (medicación, dosis, frecuencia, ejercicios) con diagnóstico opcional.
+
+**Resumen de derivación**: pensado para compartir directamente con otro profesional o institución (motivo de consulta, diagnóstico, tratamiento actual, observaciones, y a quién va dirigido). A diferencia de los otros tres, no tiene token de validación pública ni vencimiento — queda guardado de forma permanente, ya que no está pensado para que terceros lo validen.
+
+**Cómo funciona la creación (los tres con token):**
+1. El profesional elige si busca un legajo existente (autocompleta nombre y DNI) o carga los datos a mano (sin necesidad de legajo).
+2. Completa los campos propios de cada tipo (fecha de inicio y diagnóstico para tratamiento; indicaciones para receta; lugar de nacimiento y destino para asistencia).
+3. La fecha y la sede se completan solas.
+4. Al generar, se abre la vista de impresión del PDF, con el sello/firma del profesional al pie.
 
 Desde el panel principal del profesional, "Servicios Plus" → "Constancia médica" genera un justificante de asistencia exportable a PDF, con el membrete de la sede, el sello/firma del profesional, y un token de validación pública.
 
@@ -186,7 +210,7 @@ Desde el panel principal del profesional, "Servicios Plus" → "Constancia médi
 3. La fecha de consulta y la sede se completan solas (hoy, y la sede donde el profesional inició sesión).
 4. Al generar, se abre la vista de impresión del PDF, con el sello/firma del profesional al pie.
 
-**Validación pública:** cada constancia tiene un token único (formato `XXXX-XXXX-XXXX`) impreso al pie del PDF, junto con un link a `validar_constancia.php`. Cualquiera que reciba el documento puede entrar a esa página, escribir el token, y ver los datos reales guardados en el sistema (paciente, fecha, profesional, sede) para confirmar que no fueron alterados.
+**Validación pública:** cada constancia, tratamiento prolongado o receta tiene un token único (formato `XXXX-XXXX-XXXX`) impreso al pie del PDF, junto con un link a `validar_constancia.php`. Cualquiera que reciba el documento puede entrar a esa página, escribir el token, y ver los datos reales guardados en el sistema (paciente, fecha, profesional, sede) para confirmar que no fueron alterados. El resumen de derivación no tiene token, ya que está pensado para ir directo a otro profesional o institución, no para que terceros lo validen públicamente.
 
 **Vencimiento automático a los 90 días:** pasado ese plazo, la constancia deja de ser válida. Para que se borre automáticamente del sistema (dejando solo un rastro interno mínimo para auditoría, nunca visible públicamente), hace falta programar un cron que corra `cron_limpiar_constancias.php` una vez al día:
 

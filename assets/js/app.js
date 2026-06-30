@@ -499,7 +499,9 @@ function irAVista(nombre, datos = {}) {
   } else if (nombre === 'servicios-plus') {
     montarVistaServiciosPlus(contenido);
   } else if (nombre === 'constancia-medica') {
-    montarVistaConstanciaMedica(contenido);
+    montarVistaConstanciaMedica(contenido, datos.tipo || 'asistencia');
+  } else if (nombre === 'resumen-derivacion') {
+    montarVistaResumenDerivacion(contenido);
   } else if (nombre === 'configuracion') {
     montarVistaConfiguracion(contenido);
   }
@@ -3258,13 +3260,57 @@ function abrirModalGestionarLicencia(usuario) {
 async function montarVistaServiciosPlus(contenido) {
   contenido.appendChild(clonarPlantilla('tpl-servicios-plus'));
 
-  document.getElementById('btn-ir-constancia-medica').addEventListener('click', () => irAVista('constancia-medica'));
+  document.getElementById('btn-ir-constancia-medica').addEventListener('click', () => irAVista('constancia-medica', { tipo: 'asistencia' }));
+  document.getElementById('btn-ir-tratamiento-prolongado').addEventListener('click', () => irAVista('constancia-medica', { tipo: 'tratamiento' }));
+  document.getElementById('btn-ir-receta').addEventListener('click', () => irAVista('constancia-medica', { tipo: 'receta' }));
+  document.getElementById('btn-ir-resumen-derivacion').addEventListener('click', () => irAVista('resumen-derivacion'));
 
+  const selectFiltro = document.getElementById('select-filtro-documentos-plus');
+  selectFiltro.addEventListener('change', () => cargarListaDocumentosPlus(selectFiltro.value));
+  cargarListaDocumentosPlus(selectFiltro.value);
+}
+
+async function cargarListaDocumentosPlus(filtro) {
   const cont = document.getElementById('lista-constancias-emitidas');
+  cont.innerHTML = '<div class="cargando-pagina chico"><span class="spinner"></span></div>';
+
+  const etiquetasTipo = { asistencia: 'Constancia de asistencia', tratamiento: 'Tratamiento prolongado', receta: 'Receta' };
+
   try {
-    const res = await llamarApi(`${API.constancias}?accion=listar`, { method: 'GET' });
+    if (filtro === 'derivacion') {
+      const res = await llamarApi(`${API.constancias}?accion=listar_derivaciones`, { method: 'GET' });
+      if (!res.datos.length) {
+        cont.innerHTML = '<p class="resumen-vacio">Todavía no generaste ningún resumen de derivación.</p>';
+        return;
+      }
+      cont.innerHTML = '';
+      res.datos.forEach(d => {
+        const fila = document.createElement('div');
+        fila.className = 'tarjeta-paciente';
+        const fecha = new Date(d.creado_en).toLocaleDateString('es-AR');
+        fila.innerHTML = `
+          <div class="info-principal">
+            <div class="avatar-iniciales">${escaparHtml(d.nombre_completo.split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase())}</div>
+            <div>
+              <div class="nombre">${escaparHtml(d.nombre_completo)}</div>
+              <div class="meta">DNI ${escaparHtml(d.dni)}${d.destinatario ? ' · Para: ' + escaparHtml(d.destinatario) : ''} · ${fecha}</div>
+            </div>
+          </div>
+          <div class="acciones-tarjeta"></div>
+        `;
+        const btnVer = document.createElement('button');
+        btnVer.className = 'btn btn-secundario btn-chico';
+        btnVer.textContent = 'Ver / Imprimir';
+        btnVer.addEventListener('click', () => window.open(`exportar_derivacion.php?id=${d.id}`, '_blank'));
+        fila.querySelector('.acciones-tarjeta').appendChild(btnVer);
+        cont.appendChild(fila);
+      });
+      return;
+    }
+
+    const res = await llamarApi(`${API.constancias}?accion=listar&tipo=${filtro}`, { method: 'GET' });
     if (!res.datos.length) {
-      cont.innerHTML = '<p class="resumen-vacio">Todavía no emitiste ninguna constancia.</p>';
+      cont.innerHTML = `<p class="resumen-vacio">Todavía no emitiste ningún documento de tipo "${etiquetasTipo[filtro] || filtro}".</p>`;
       return;
     }
     cont.innerHTML = '';
@@ -3295,8 +3341,24 @@ async function montarVistaServiciosPlus(contenido) {
   }
 }
 
-function montarVistaConstanciaMedica(contenido) {
+function montarVistaConstanciaMedica(contenido, tipo) {
   contenido.appendChild(clonarPlantilla('tpl-constancia-medica'));
+
+  const titulosPorTipo = {
+    asistencia: ['Constancia médica', 'Justificante de asistencia a consulta, listo para exportar a PDF.'],
+    tratamiento: ['Tratamiento prolongado', 'Constancia de seguimiento continuo, con fecha de inicio y diagnóstico.'],
+    receta: ['Receta', 'Indicaciones o medicación, listas para exportar a PDF.'],
+  };
+  const [tituloVista, descVista] = titulosPorTipo[tipo] || titulosPorTipo.asistencia;
+  document.getElementById('titulo-vista-constancia').textContent = tituloVista;
+  document.getElementById('desc-vista-constancia').textContent = descVista;
+
+  // Mostrar/ocultar bloques según el tipo elegido.
+  document.getElementById('campos-tratamiento-constancia').classList.toggle('oculto', tipo !== 'tratamiento');
+  document.getElementById('campos-receta-constancia').classList.toggle('oculto', tipo !== 'receta');
+  document.getElementById('campo-lugarnac-constancia').classList.toggle('oculto', tipo === 'receta');
+  document.getElementById('campo-lugartrabajo-constancia').classList.toggle('oculto', tipo === 'receta');
+  document.getElementById('btn-confirmar-constancia').textContent = tipo === 'receta' ? 'Generar receta' : 'Generar constancia';
 
   const bloqueBuscar = document.getElementById('bloque-buscar-legajo-constancia');
   const form = document.getElementById('form-constancia-medica');
@@ -3386,27 +3448,152 @@ function montarVistaConstanciaMedica(contenido) {
       return;
     }
 
+    const cuerpo = {
+      tipo,
+      paciente_id: pacienteIdElegido,
+      nombre_completo: nombreCompleto,
+      dni,
+      lugar_nacimiento: lugarNacimiento,
+      lugar_trabajo: lugarTrabajo,
+    };
+
+    if (tipo === 'tratamiento') {
+      const tratamientoDesde = document.getElementById('input-tratamiento-desde-constancia').value;
+      if (!tratamientoDesde) { mostrarToast('Indicá desde cuándo está en tratamiento.', 'error'); return; }
+      cuerpo.tratamiento_desde = tratamientoDesde;
+      cuerpo.diagnostico = document.getElementById('input-diagnostico-constancia').value.trim();
+    }
+    if (tipo === 'receta') {
+      const indicaciones = document.getElementById('input-indicaciones-receta').value.trim();
+      if (!indicaciones) { mostrarToast('Completá las indicaciones de la receta.', 'error'); return; }
+      cuerpo.indicaciones = indicaciones;
+      cuerpo.diagnostico = document.getElementById('input-diagnostico-receta').value.trim();
+    }
+
     const btn = document.getElementById('btn-confirmar-constancia');
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Generando...';
     try {
-      const res = await llamarApi(`${API.constancias}?accion=crear`, {
-        method: 'POST',
-        body: JSON.stringify({
-          paciente_id: pacienteIdElegido,
-          nombre_completo: nombreCompleto,
-          dni,
-          lugar_nacimiento: lugarNacimiento,
-          lugar_trabajo: lugarTrabajo,
-        }),
-      });
-      mostrarToast('Constancia generada correctamente.', 'exito');
+      const res = await llamarApi(`${API.constancias}?accion=crear`, { method: 'POST', body: JSON.stringify(cuerpo) });
+      mostrarToast('Documento generado correctamente.', 'exito');
       window.open(`exportar_constancia.php?id=${res.id}`, '_blank');
       irAVista('servicios-plus');
     } catch (e) {
       mostrarToast(e.message, 'error');
       btn.disabled = false;
-      btn.textContent = 'Generar constancia';
+      btn.textContent = tipo === 'receta' ? 'Generar receta' : 'Generar constancia';
+    }
+  });
+}
+
+function montarVistaResumenDerivacion(contenido) {
+  contenido.appendChild(clonarPlantilla('tpl-resumen-derivacion'));
+
+  const bloqueBuscar = document.getElementById('bloque-buscar-legajo-derivacion');
+  const form = document.getElementById('form-resumen-derivacion');
+  const pacienteElegidoDiv = document.getElementById('paciente-elegido-derivacion');
+  let pacienteIdElegido = null;
+
+  function mostrarFormulario() { form.classList.remove('oculto'); }
+
+  document.getElementById('btn-modo-con-legajo-derivacion').addEventListener('click', () => {
+    bloqueBuscar.classList.remove('oculto');
+    form.classList.add('oculto');
+    pacienteIdElegido = null;
+  });
+
+  document.getElementById('btn-modo-sin-legajo-derivacion').addEventListener('click', () => {
+    bloqueBuscar.classList.add('oculto');
+    pacienteIdElegido = null;
+    document.getElementById('input-nombre-derivacion').value = '';
+    document.getElementById('input-dni-derivacion').value = '';
+    document.getElementById('input-nombre-derivacion').disabled = false;
+    document.getElementById('input-dni-derivacion').disabled = false;
+    mostrarFormulario();
+  });
+
+  const inputBuscar = document.getElementById('input-buscar-paciente-derivacion');
+  const resultadosDiv = document.getElementById('resultados-busqueda-paciente-derivacion');
+  let temporizadorBusqueda = null;
+
+  inputBuscar.addEventListener('input', () => {
+    clearTimeout(temporizadorBusqueda);
+    const valor = inputBuscar.value.trim();
+    if (!valor) { resultadosDiv.innerHTML = ''; return; }
+    temporizadorBusqueda = setTimeout(async () => {
+      try {
+        const esDni = /^\d+$/.test(valor);
+        const res = await llamarApi(`${API.pacientes}?accion=buscar&tipo=${esDni ? 'dni' : 'nombre'}&valor=${encodeURIComponent(valor)}`, { method: 'GET' });
+        resultadosDiv.innerHTML = '';
+        if (!res.datos.length) {
+          resultadosDiv.innerHTML = '<p class="resumen-vacio" style="margin:0;">Sin resultados.</p>';
+          return;
+        }
+        res.datos.slice(0, 8).forEach(p => {
+          const item = document.createElement('div');
+          item.className = 'tarjeta-paciente';
+          item.style.cursor = 'pointer';
+          item.innerHTML = `
+            <div class="info-principal">
+              <div class="avatar-iniciales">${escaparHtml((p.nombre[0] + p.apellido[0]).toUpperCase())}</div>
+              <div>
+                <div class="nombre">${escaparHtml(p.nombre)} ${escaparHtml(p.apellido)}</div>
+                <div class="meta">DNI ${escaparHtml(p.dni)}</div>
+              </div>
+            </div>
+          `;
+          item.addEventListener('click', () => {
+            pacienteIdElegido = p.id;
+            inputBuscar.value = '';
+            resultadosDiv.innerHTML = '';
+            pacienteElegidoDiv.classList.remove('oculto');
+            pacienteElegidoDiv.innerHTML = `Paciente elegido: <strong>${escaparHtml(p.nombre)} ${escaparHtml(p.apellido)}</strong> (DNI ${escaparHtml(p.dni)})`;
+            document.getElementById('input-nombre-derivacion').value = `${p.nombre} ${p.apellido}`;
+            document.getElementById('input-dni-derivacion').value = p.dni;
+            document.getElementById('input-nombre-derivacion').disabled = true;
+            document.getElementById('input-dni-derivacion').disabled = true;
+            mostrarFormulario();
+          });
+          resultadosDiv.appendChild(item);
+        });
+      } catch (e) {
+        resultadosDiv.innerHTML = '';
+      }
+    }, 300);
+  });
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nombreCompleto = document.getElementById('input-nombre-derivacion').value.trim();
+    const dni = document.getElementById('input-dni-derivacion').value.trim();
+    if (!nombreCompleto || !dni) {
+      mostrarToast('Completá el nombre y el DNI del paciente.', 'error');
+      return;
+    }
+
+    const cuerpo = {
+      paciente_id: pacienteIdElegido,
+      nombre_completo: nombreCompleto,
+      dni,
+      destinatario: document.getElementById('input-destinatario-derivacion').value.trim(),
+      motivo_consulta: document.getElementById('input-motivo-derivacion').value.trim(),
+      diagnostico: document.getElementById('input-diagnostico-derivacion').value.trim(),
+      tratamiento_actual: document.getElementById('input-tratamiento-derivacion').value.trim(),
+      observaciones: document.getElementById('input-observaciones-derivacion').value.trim(),
+    };
+
+    const btn = document.getElementById('btn-confirmar-derivacion');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spinner"></span> Generando...';
+    try {
+      const res = await llamarApi(`${API.constancias}?accion=crear_derivacion`, { method: 'POST', body: JSON.stringify(cuerpo) });
+      mostrarToast('Resumen de derivación generado.', 'exito');
+      window.open(`exportar_derivacion.php?id=${res.id}`, '_blank');
+      irAVista('servicios-plus');
+    } catch (e) {
+      mostrarToast(e.message, 'error');
+      btn.disabled = false;
+      btn.textContent = 'Generar resumen';
     }
   });
 }

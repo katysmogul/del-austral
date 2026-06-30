@@ -1,20 +1,21 @@
 {
-  "version": "v32",
+  "version": "v33",
   "fecha": "2026-06-30",
-  "descripcion": "La constancia médica ya no se parte en 2 hojas al imprimir/exportar a PDF (faltaba page-break-inside y los márgenes verticales eran muy grandes)",
+  "descripcion": "Servicios Plus ampliado: Constancia de tratamiento prolongado y Receta (con token público, 90 días), y Resumen de derivación (sin token, para compartir entre profesionales)",
   "archivos_criticos": {
-    "index.html": "6d1a2edeeaed1b0f7e9962c7f9a62122",
-    "assets/js/app.js": "a579b7e0b58f2356161d80414f6eaa6d",
+    "index.html": "85528a4dc87a9d61a86d6020cbf8df65",
+    "assets/js/app.js": "cb6e43b59b0da860b72e557cc1c7dfa4",
     "assets/css/estilos.css": "b4b8ff61d69a0782528ccdc3d4ad4e78",
     "api/auth.php": "ae4c6fa7926cce80520b6ccb02f98ce0",
     "api/citas.php": "7622c3facffd9fb671fa63494be56124",
     "api/pacientes.php": "df7de793317e8229120119a5050c44c2",
     "api/adjuntos.php": "8da3f85e26239072953298c60dcb5540",
     "api/admin.php": "b0f9dbf5039e62dc5c0692268ce46613",
-    "api/constancias.php": "86a4ca4fe62bc7f8524e78718787becb",
+    "api/constancias.php": "9836aa265ff640212fb282a78ba0f36d",
     "confirmar_turno.php": "ad6a798a41a594bb5dcc797295222cce",
     "exportar.php": "1f6661903954229762d858d2f179da94",
-    "exportar_constancia.php": "33e5bc1b35bd20b15425617a45756e50",
-    "validar_constancia.php": "6358703c818e5efcfb2543c6c5c7da23"
+    "exportar_constancia.php": "96c4fb1b52d86aa7c0cd4d8e5c9b0a85",
+    "exportar_derivacion.php": "70d2dd2b48775831aefb47881eacabbb",
+    "validar_constancia.php": "cc5d40b73a9c3750d5e7c3cc75454d5f"
   }
 }

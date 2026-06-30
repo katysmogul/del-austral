@@ -26,8 +26,8 @@ if (!$vencidas) {
 }
 
 $stmtInsertarHistorico = $pdo->prepare('
-    INSERT INTO constancias_historico (token, profesional_id, nombre_completo, dni, emitida_en, vencio_en)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO constancias_historico (token, tipo, profesional_id, nombre_completo, dni, emitida_en, vencio_en)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
 ');
 $stmtBorrar = $pdo->prepare('DELETE FROM constancias WHERE id = ?');
 
@@ -35,6 +35,7 @@ $total = 0;
 foreach ($vencidas as $c) {
     $stmtInsertarHistorico->execute([
         $c['token'],
+        $c['tipo'],
         $c['profesional_id'],
         $c['nombre_completo'],
         $c['dni'],

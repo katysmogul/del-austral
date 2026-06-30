@@ -244,6 +244,7 @@ CREATE TABLE IF NOT EXISTS plantillas_evolucion (
 CREATE TABLE IF NOT EXISTS constancias (
     id INT PRIMARY KEY AUTO_INCREMENT,
     token VARCHAR(40) NOT NULL UNIQUE,
+    tipo ENUM('asistencia','tratamiento','receta') NOT NULL DEFAULT 'asistencia',
     profesional_id INT NOT NULL,
     sede_id INT NOT NULL,
     paciente_id INT NULL,
@@ -251,6 +252,9 @@ CREATE TABLE IF NOT EXISTS constancias (
     dni VARCHAR(20) NOT NULL,
     lugar_nacimiento VARCHAR(150) NULL,
     fecha_consulta DATE NOT NULL,
+    tratamiento_desde DATE NULL,
+    diagnostico TEXT NULL,
+    indicaciones TEXT NULL,
     destino TEXT NOT NULL,
     lugar_destino VARCHAR(200) NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -265,12 +269,31 @@ CREATE TABLE IF NOT EXISTS constancias (
 CREATE TABLE IF NOT EXISTS constancias_historico (
     id INT PRIMARY KEY AUTO_INCREMENT,
     token VARCHAR(40) NOT NULL,
+    tipo ENUM('asistencia','tratamiento','receta') NOT NULL DEFAULT 'asistencia',
     profesional_id INT NULL,
     nombre_completo VARCHAR(200) NOT NULL,
     dni VARCHAR(20) NOT NULL,
     emitida_en TIMESTAMP NOT NULL,
     vencio_en DATE NOT NULL,
     INDEX idx_token_historico (token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS resumenes_derivacion (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    profesional_id INT NOT NULL,
+    sede_id INT NOT NULL,
+    paciente_id INT NULL,
+    nombre_completo VARCHAR(200) NOT NULL,
+    dni VARCHAR(20) NOT NULL,
+    motivo_consulta TEXT NULL,
+    diagnostico TEXT NULL,
+    tratamiento_actual TEXT NULL,
+    destinatario VARCHAR(200) NULL,
+    observaciones TEXT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (profesional_id) REFERENCES usuarios(id) ON DELETE CASCADE,
+    FOREIGN KEY (sede_id) REFERENCES sedes(id) ON DELETE CASCADE,
+    FOREIGN KEY (paciente_id) REFERENCES pacientes(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS historial_cambios (

@@ -673,11 +673,44 @@
       <p>Justificante de asistencia, exportable a PDF y validable con un token único.</p>
       <span class="ir">Crear →</span>
     </button>
+    <button class="tarjeta-menu" id="btn-ir-tratamiento-prolongado">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v8m-4-4h8M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>
+      </div>
+      <h3>Tratamiento prolongado</h3>
+      <p>Constancia de seguimiento continuo, con fecha de inicio y diagnóstico.</p>
+      <span class="ir">Crear →</span>
+    </button>
+    <button class="tarjeta-menu" id="btn-ir-receta">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+      </div>
+      <h3>Receta</h3>
+      <p>Indicaciones o medicación, exportable a PDF y validable con un token único.</p>
+      <span class="ir">Crear →</span>
+    </button>
+    <button class="tarjeta-menu" id="btn-ir-resumen-derivacion">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </div>
+      <h3>Resumen de derivación</h3>
+      <p>Para compartir con otro profesional o institución, sin token público.</p>
+      <span class="ir">Crear →</span>
+    </button>
   </div>
 
   <div class="panel">
-    <div class="panel-titulo">Constancias emitidas</div>
-    <p class="panel-subtitulo">Las constancias se eliminan automáticamente 90 días después de emitidas.</p>
+    <div class="panel-titulo">Documentos emitidos</div>
+    <p class="panel-subtitulo">Las constancias y recetas se eliminan automáticamente 90 días después de emitidas. Los resúmenes de derivación no vencen.</p>
+    <div class="fila-buscador-usuarios" style="display:flex; gap:10px; align-items:center;">
+      <label style="font-size:0.85rem; color:var(--tinta-suave); white-space:nowrap;">Mostrar:</label>
+      <select id="select-filtro-documentos-plus" style="flex:1; padding:8px 12px; border:1.5px solid var(--linea); border-radius:var(--radio-chico); font-family:inherit; background:var(--crema);">
+        <option value="asistencia">Constancias de asistencia</option>
+        <option value="tratamiento">Constancias de tratamiento prolongado</option>
+        <option value="receta">Recetas</option>
+        <option value="derivacion">Resúmenes de derivación</option>
+      </select>
+    </div>
     <div id="lista-constancias-emitidas"><div class="cargando-pagina chico"><span class="spinner"></span></div></div>
   </div>
 </template>
@@ -689,8 +722,8 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
         Volver a Servicios Plus
       </button>
-      <h2>Constancia médica</h2>
-      <p class="desc">Justificante de asistencia a consulta, listo para exportar a PDF.</p>
+      <h2 id="titulo-vista-constancia">Constancia médica</h2>
+      <p class="desc" id="desc-vista-constancia">Justificante de asistencia a consulta, listo para exportar a PDF.</p>
     </div>
   </div>
 
@@ -720,26 +753,122 @@
           <label>DNI o CUIL</label>
           <input type="text" id="input-dni-constancia">
         </div>
-        <div class="campo">
+        <div class="campo" id="campo-lugarnac-constancia">
           <label>Ciudad y provincia de nacimiento (opcional)</label>
           <input type="text" id="input-lugarnac-constancia" placeholder="Ej: Comodoro Rivadavia, Chubut">
         </div>
       </div>
 
-      <div class="campo" style="margin-bottom: 14px;">
+      <div id="campos-tratamiento-constancia" class="oculto">
+        <div class="grilla-campos" style="margin-bottom: 14px;">
+          <div class="campo">
+            <label>En tratamiento desde</label>
+            <input type="date" id="input-tratamiento-desde-constancia">
+          </div>
+          <div class="campo ancho-completo">
+            <label>Diagnóstico / motivo del tratamiento (opcional)</label>
+            <textarea id="input-diagnostico-constancia" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div id="campos-receta-constancia" class="oculto">
+        <div class="campo" style="margin-bottom: 14px;">
+          <label>Diagnóstico / motivo (opcional)</label>
+          <textarea id="input-diagnostico-receta" rows="2"></textarea>
+        </div>
+        <div class="campo" style="margin-bottom: 14px;">
+          <label>Indicaciones</label>
+          <textarea id="input-indicaciones-receta" rows="5" placeholder="Medicación, dosis, frecuencia, ejercicios indicados, etc."></textarea>
+        </div>
+      </div>
+
+      <div id="campo-lugartrabajo-constancia" class="campo" style="margin-bottom: 14px;">
         <label>Lugar de trabajo o institución (opcional)</label>
         <input type="text" id="input-lugartrabajo-constancia" placeholder="Dejalo vacío para 'ante las autoridades que lo requieran'">
         <span class="ayuda">Si lo completás, el certificado va a decir "ante las autoridades de [esto]" en vez del texto genérico.</span>
       </div>
 
       <div class="campo" style="margin-bottom: 8px;">
-        <label>Fecha de la consulta</label>
+        <label>Fecha de emisión</label>
         <input type="text" value="Hoy" disabled style="background:var(--crema); color:var(--tinta-suave);">
         <span class="ayuda">Se completa automáticamente con la fecha de hoy.</span>
       </div>
 
       <div class="acciones-modal" style="justify-content:flex-start; margin-top:24px;">
-        <button type="submit" class="btn btn-primario" id="btn-confirmar-constancia">Generar constancia</button>
+        <button type="submit" class="btn btn-primario" id="btn-confirmar-constancia">Generar</button>
+      </div>
+    </form>
+  </div>
+</template>
+
+<template id="tpl-resumen-derivacion">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver-vista="servicios-plus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver a Servicios Plus
+      </button>
+      <h2>Resumen de derivación</h2>
+      <p class="desc">Para compartir con otro profesional o institución. No tiene token de validación pública.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="campo" style="margin-bottom: 20px;">
+      <label>¿Cómo querés completar los datos del paciente?</label>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn btn-secundario btn-chico" id="btn-modo-con-legajo-derivacion" type="button">Buscar en mis legajos</button>
+        <button class="btn btn-secundario btn-chico" id="btn-modo-sin-legajo-derivacion" type="button">Sin necesidad de legajo</button>
+      </div>
+    </div>
+
+    <div id="bloque-buscar-legajo-derivacion" class="oculto campo" style="margin-bottom: 20px;">
+      <label>Buscar paciente</label>
+      <input type="search" id="input-buscar-paciente-derivacion" placeholder="Nombre o DNI…" autocomplete="off">
+      <div id="resultados-busqueda-paciente-derivacion" class="lista-resultados" style="margin-top:10px;"></div>
+      <div id="paciente-elegido-derivacion" class="oculto" style="margin-top:12px; padding:12px 16px; background:var(--crema); border-radius:var(--radio-chico);"></div>
+    </div>
+
+    <form id="form-resumen-derivacion" class="oculto">
+      <div class="grilla-campos" style="margin-bottom: 14px;">
+        <div class="campo ancho-completo">
+          <label>Nombre y apellido completo</label>
+          <input type="text" id="input-nombre-derivacion">
+        </div>
+        <div class="campo ancho-completo">
+          <label>DNI o CUIL</label>
+          <input type="text" id="input-dni-derivacion">
+        </div>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Dirigido a (profesional o institución, opcional)</label>
+        <input type="text" id="input-destinatario-derivacion" placeholder="Ej: Dr. Pérez, Hospital Regional">
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Motivo de consulta (opcional)</label>
+        <textarea id="input-motivo-derivacion" rows="2"></textarea>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Diagnóstico (opcional)</label>
+        <textarea id="input-diagnostico-derivacion" rows="2"></textarea>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Tratamiento actual (opcional)</label>
+        <textarea id="input-tratamiento-derivacion" rows="2"></textarea>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Observaciones (opcional)</label>
+        <textarea id="input-observaciones-derivacion" rows="2"></textarea>
+      </div>
+
+      <div class="acciones-modal" style="justify-content:flex-start; margin-top:24px;">
+        <button type="submit" class="btn btn-primario" id="btn-confirmar-derivacion">Generar resumen</button>
       </div>
     </form>
   </div>
