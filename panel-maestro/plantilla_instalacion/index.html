@@ -1,0 +1,1667 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="title-pagina">Del Austral · Historial Clínico</title>
+
+<!-- PWA: hace que el sitio se pueda "instalar" como app -->
+<link rel="manifest" href="manifest.php">
+<meta name="theme-color" content="#3D6B63">
+
+<!-- Favicon e íconos -->
+<link rel="icon" type="image/png" sizes="32x32" href="assets/icons/favicon-32.png">
+<link rel="apple-touch-icon" href="assets/icons/icon-apple-touch.png">
+
+<!-- iOS no lee manifest.json para el modo "app instalada"; necesita estas etiquetas propias -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Del Austral" id="meta-apple-titulo">
+
+<link rel="stylesheet" href="assets/css/estilos.css">
+</head>
+<body>
+
+<!-- Fondo decorativo de ondas -->
+<svg class="fondo-ondas" viewBox="0 0 1440 900" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  <path d="M0,750 Q60,700 120,750 T240,750 T360,750 T480,750 T600,750 T720,750 T840,750 T960,750 T1080,750 T1200,750 T1320,750 T1440,750" stroke="#3D6B63" stroke-width="1.5" fill="none" opacity="0.06"/>
+  <path d="M0,800 Q90,650 180,800 T360,800 T540,800 T720,800 T900,800 T1080,800 T1260,800 T1440,800" stroke="#C9A84C" stroke-width="1.5" fill="none" opacity="0.06"/>
+  <path d="M0,60 Q40,20 80,60 T160,60 T240,60 T320,60 T400,60 T480,60 T560,60 T640,60 T720,60 T800,60 T880,60 T960,60 T1040,60 T1120,60 T1200,60 T1280,60 T1360,60 T1440,60" stroke="#3D6B63" stroke-width="1.5" fill="none" opacity="0.05"/>
+</svg>
+
+<!-- Acceso discreto al rol Apoderado, sin revelar que existe -->
+<button id="btn-acceso-mantenimiento" class="btn-mantenimiento" type="button">Mantenimiento</button>
+
+<!-- ============================================================
+     PANTALLA DE ACCESO
+     ============================================================ -->
+<div id="vista-acceso" class="pantalla-acceso">
+  <div class="tarjeta-acceso">
+    <div class="marca-acceso">
+      <svg class="icono-marca" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 24h4l3-12 4 24 4-30 4 24 4-18 3 12h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1 id="titulo-marca-login">Del Austral</h1>
+      <span class="subtitulo">Historial clínico digital</span>
+    </div>
+
+    <!-- PASO: firmar el contrato (obligatorio antes de crear la clave de Apoderado) -->
+    <div id="paso-firmar-contrato" class="paso-login oculto">
+      <p class="instruccion-patron">Antes de crear la clave de Apoderado, hay que firmar el contrato de servicio.</p>
+      <p class="ayuda" style="margin-bottom:14px;">
+        <a href="#" id="link-ver-contrato-antes-firmar" target="_blank" rel="noopener">Leer el contrato completo</a>
+      </p>
+      <canvas id="canvas-firma-contrato-cliente" width="500" height="170" class="canvas-firma"></canvas>
+      <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap; justify-content:center;">
+        <button class="btn btn-secundario btn-chico" id="btn-limpiar-firma-contrato-cliente" type="button">Limpiar</button>
+        <button class="btn btn-primario btn-chico" id="btn-confirmar-firma-contrato-cliente" type="button">Firmar y continuar</button>
+      </div>
+      <p id="error-firma-contrato-cliente" class="instruccion-patron error oculto" style="margin-top:10px;"></p>
+    </div>
+
+    <!-- PASO: crear clave de Apoderado (solo la primera vez que se instala) -->
+    <div id="paso-crear-desarrollador" class="paso-login oculto">
+      <p class="instruccion-patron">Antes de empezar, creá la clave de Apoderado. La vas a usar para configurar sedes y dar de alta a los profesionales.</p>
+      <div class="indicadores-pin" id="indicadores-pin-dev-crear">
+        <span class="punto-pin"></span><span class="punto-pin"></span><span class="punto-pin"></span><span class="punto-pin"></span>
+      </div>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" class="input-pin-oculto" id="input-pin-dev-crear" aria-label="Clave de apoderado">
+    </div>
+
+    <!-- PASO: elegir sede -->
+    <div id="paso-elegir-sede" class="paso-login oculto">
+      <p class="instruccion-patron">¿En qué sede estás?</p>
+      <div class="lista-opciones-login" id="lista-sedes-login"></div>
+    </div>
+
+    <!-- PASO: elegir usuario dentro de la sede -->
+    <div id="paso-elegir-usuario" class="paso-login oculto">
+      <p class="instruccion-patron">¿Quién eres?</p>
+      <div class="lista-opciones-login" id="lista-usuarios-login"></div>
+      <button class="btn-texto" id="btn-volver-sede">← Cambiar de sede</button>
+    </div>
+
+    <!-- PASO: si es administrativa, elegir a qué profesional representa -->
+    <div id="paso-elegir-profesional-activo" class="paso-login oculto">
+      <p class="instruccion-patron">¿A nombre de qué profesional vas a trabajar?</p>
+      <div class="lista-opciones-login" id="lista-profesionales-login"></div>
+      <button class="btn-texto" id="btn-volver-usuario-desde-prof">← Volver</button>
+    </div>
+
+    <!-- PASO: ingresar PIN -->
+    <div id="paso-ingresar-pin" class="paso-login oculto">
+      <p class="instruccion-patron" id="texto-instruccion-pin">Ingresá tu PIN</p>
+      <div class="indicadores-pin" id="indicadores-pin">
+        <span class="punto-pin"></span><span class="punto-pin"></span><span class="punto-pin"></span><span class="punto-pin"></span>
+      </div>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" class="input-pin-oculto" id="input-pin-oculto" aria-label="PIN de acceso">
+      <div class="acciones-patron">
+        <button class="btn-texto oculto" id="btn-reintentar-patron">Volver a intentar</button>
+        <button class="btn-texto" id="btn-volver-usuario">← Volver</button>
+      </div>
+    </div>
+
+    <!-- PASO: clave de acceso de mantenimiento (login normal, no creación) -->
+    <div id="paso-clave-desarrollador" class="paso-login oculto">
+      <p class="instruccion-patron">Ingresá la clave de acceso</p>
+      <div class="indicadores-pin" id="indicadores-pin-dev">
+        <span class="punto-pin"></span><span class="punto-pin"></span><span class="punto-pin"></span><span class="punto-pin"></span>
+      </div>
+      <input type="password" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" class="input-pin-oculto" id="input-clave-dev" aria-label="Clave de apoderado">
+      <div class="acciones-patron">
+        <button class="btn-texto" id="btn-volver-sede-desde-dev">← Volver</button>
+      </div>
+    </div>
+
+    <p class="instruccion-patron oculto" id="texto-instruccion">Cargando...</p>
+  </div>
+</div>
+
+<!-- ============================================================
+     PRIMERA CONFIGURACIÓN DEL APODERADO (sede + profesional)
+     ============================================================ -->
+<div id="vista-setup-inicial" class="pantalla-acceso oculto">
+  <div class="tarjeta-acceso" style="max-width: 480px;">
+    <div class="marca-acceso">
+      <svg class="icono-marca" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 24h4l3-12 4 24 4-30 4 24 4-18 3 12h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h1>¡Bienvenido, Apoderado!</h1>
+      <span class="subtitulo">Antes de que el consultorio pueda usar el sistema, creá la primera sede y el primer profesional.</span>
+    </div>
+
+    <div class="campo" style="margin-bottom: 18px; text-align: left;">
+      <label>Nombre de la primera sede</label>
+      <input type="text" id="input-primera-sede" placeholder="Ej: Clínica del Valle">
+    </div>
+
+    <div class="campo" style="margin-bottom: 8px; text-align: left;">
+      <label>Nombre del primer profesional</label>
+      <input type="text" id="input-primer-profesional" placeholder="Ej: Dr. Arian Lorenz">
+    </div>
+    <div class="campo" style="margin-bottom: 18px; text-align: left;">
+      <label>PIN de acceso para este profesional (4 números)</label>
+      <input type="text" id="input-pin-primer-profesional" inputmode="numeric" pattern="[0-9]*" maxlength="4" class="input-pin-texto" placeholder="Ej: 1234">
+    </div>
+
+    <button class="btn btn-primario" id="btn-crear-setup-inicial" style="width:100%;">Crear sede y profesional</button>
+    <button class="btn-texto" id="btn-ir-panel-dev" style="margin-top:14px;">Saltar por ahora, ir directo al panel →</button>
+  </div>
+</div>
+
+<!-- ============================================================
+     CARTEL DE BIENVENIDA (tras iniciar sesión)
+     ============================================================ -->
+<div id="modal-bienvenida" class="overlay-modal oculto">
+  <div class="modal modal-bienvenida">
+    <svg class="icono-marca" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M4 24h4l3-12 4 24 4-30 4 24 4-18 3 12h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h3 id="texto-bienvenida">¡Bienvenido/a!</h3>
+    <p>Tu sistema de historiales clínicos está listo para usar.</p>
+    <div class="acciones-modal" style="justify-content:center;">
+      <button class="btn btn-primario" id="btn-cerrar-bienvenida">Empezar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     APP PRINCIPAL
+     ============================================================ -->
+<div id="vista-app" class="app oculto">
+
+  <div class="topbar">
+    <div class="marca">
+      <svg class="icono-marca" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M4 24h4l3-12 4 24 4-30 4 24 4-18 3 12h6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h2 id="titulo-marca-topbar">Del Austral</h2>
+    </div>
+    <div class="topbar-acciones">
+      <button class="btn btn-secundario btn-chico" id="btn-inicio" title="Ir al inicio">Inicio</button>
+      <button class="btn btn-secundario btn-chico" id="btn-cerrar-sesion">Cerrar sesión</button>
+    </div>
+  </div>
+
+  <div class="contenido" id="contenido"></div>
+</div>
+
+<!-- Contenedor de toasts -->
+<div class="toast-contenedor" id="toast-contenedor"></div>
+
+<!-- ============================================================
+     PLANTILLAS (se clonan por JS, no se muestran directamente)
+     ============================================================ -->
+<template id="tpl-modal-licencia">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 400px;">
+      <h3>Gestionar licencia</h3>
+      <p id="texto-prof-licencia"></p>
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Estado</label>
+        <select id="select-estado-licencia">
+          <option value="activo">Activo</option>
+          <option value="pausado">Pausado (motivos varios)</option>
+          <option value="prohibido">Prohibido (falta de pago u otros)</option>
+        </select>
+      </div>
+      <div id="campo-dias-licencia" class="campo" style="margin-bottom: 20px;">
+        <label>Duración de la licencia</label>
+        <select id="select-dias-licencia">
+          <option value="">Indeterminada (sin vencimiento)</option>
+          <option value="7">7 días</option>
+          <option value="15">15 días</option>
+          <option value="30">30 días</option>
+          <option value="60">60 días</option>
+          <option value="90">90 días</option>
+          <option value="120">120 días</option>
+        </select>
+        <span class="ayuda">La duración solo aplica si el estado es "Activo".</span>
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-licencia">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-licencia">Guardar</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-cambiar-pin">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 380px;">
+      <h3>Cambiar PIN</h3>
+      <p id="texto-usuario-cambiar-pin"></p>
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>Nuevo PIN (4 números)</label>
+        <input type="text" id="input-nuevo-pin" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Ej: 4821" class="input-pin-texto">
+        <span class="ayuda">La persona va a usar este PIN desde ahora para entrar al sistema.</span>
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-cambiar-pin">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-cambiar-pin">Guardar PIN</button>
+      </div>
+    </div>
+  </div>
+
+</template>
+
+<template id="tpl-menu">
+  <div class="encabezado-menu">
+    <span class="eyebrow">Panel principal</span>
+    <h1 id="titulo-menu">¿Qué necesitás hacer?</h1>
+    <p id="desc-menu">Elegí una opción para gestionar los legajos de tus pacientes.</p>
+  </div>
+
+  <div id="franja-resumen-hoy" class="franja-resumen-hoy oculto" data-rol="profesional"></div>
+  <button id="franja-avisos-turnos" class="franja-avisos-turnos oculto" data-rol="profesional"></button>
+
+  <div class="panel-resumen-menu" id="panel-resumen-menu">
+    <div class="resumen-columna">
+      <div class="resumen-titulo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Próximas citas
+      </div>
+      <div id="lista-resumen-citas" class="lista-resumen">
+        <div class="cargando-pagina chico"><span class="spinner"></span></div>
+      </div>
+    </div>
+    <div class="resumen-columna" data-rol="profesional">
+      <div class="resumen-titulo alerta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+        Pacientes sin sesiones recientes
+      </div>
+      <div id="lista-resumen-inactivos" class="lista-resumen">
+        <div class="cargando-pagina chico"><span class="spinner"></span></div>
+      </div>
+    </div>
+    <div class="resumen-columna">
+      <div class="resumen-titulo cumple">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M8 6c0 1-1 2-2 2s-2-1-2-2 1-2 1-3M18 6c0 1-1 2-2 2s-2-1-2-2 1-2 1-3"/><path d="M4 13h16v7a1 1 0 01-1 1H5a1 1 0 01-1-1v-7zM4 13c0-2 2-3 2-3M12 13c0-2 2-3 2-3M20 13c0-2-2-3-2-3"/></svg>
+        Próximos cumpleaños
+      </div>
+      <div id="lista-resumen-cumple" class="lista-resumen">
+        <div class="cargando-pagina chico"><span class="spinner"></span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grilla-menu">
+    <button class="tarjeta-menu crear" data-vista="crear">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      </div>
+      <h3>Crear legajo</h3>
+      <p id="desc-crear-legajo">Registrá un nuevo paciente con sus datos personales, obra social y motivo de consulta.</p>
+      <span class="ir">Crear nuevo →</span>
+    </button>
+    <button class="tarjeta-menu acceder" data-vista="acceder">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+      </div>
+      <h3>Acceder a legajos</h3>
+      <p id="desc-acceder-legajos">Buscá por DNI, nombre, fecha de atención u obra social para ver el historial completo.</p>
+      <span class="ir">Buscar →</span>
+    </button>
+    <button class="tarjeta-menu agenda" data-vista="agenda">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      </div>
+      <h3>Agenda</h3>
+      <p>Mirá el calendario completo de citas, agendá turnos nuevos y marcá asistencias.</p>
+      <span class="ir">Ver calendario →</span>
+    </button>
+    <button class="tarjeta-menu borrar" data-vista="borrar" data-rol="profesional">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0l-1 14a2 2 0 01-2 2H7a2 2 0 01-2-2L4 6h16z"/></svg>
+      </div>
+      <h3>Eliminar legajos</h3>
+      <p>Quitá un legajo del sistema activo. Queda resguardado en la base histórica.</p>
+      <span class="ir">Gestionar →</span>
+    </button>
+    <button class="tarjeta-menu dashboard" data-vista="dashboard" data-rol="profesional">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18M7 14l4-4 4 4 4-6"/></svg>
+      </div>
+      <h3>Estadísticas</h3>
+      <p>Pacientes activos, sesiones del mes y citas por estado, todo de un vistazo.</p>
+      <span class="ir">Ver panel →</span>
+    </button>
+    <button class="tarjeta-menu" data-vista="mi-legajo" data-rol="profesional">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </div>
+      <h3>Mi legajo</h3>
+      <p>Tus datos profesionales registrados en el sistema. Solo lectura.</p>
+      <span class="ir">Ver →</span>
+    </button>
+    <button class="tarjeta-menu" data-vista="servicios-plus" data-rol="profesional">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+      </div>
+      <h3>Servicios Plus</h3>
+      <p>Constancias y certificados para tus pacientes, validables con un token único.</p>
+      <span class="ir">Ver →</span>
+    </button>
+  </div>
+</template>
+
+<template id="tpl-crear">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver
+      </button>
+      <h2 id="titulo-form-crear">Crear legajo nuevo</h2>
+      <p class="desc" id="desc-form-crear">Completá los datos del paciente. Podés agregar sesiones más adelante desde su ficha.</p>
+    </div>
+  </div>
+
+  <button type="button" class="franja-aviso-legal" id="btn-abrir-aviso-legal">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+    <span>Aviso de protección de datos personales (Ley 25.326)</span>
+    <span class="franja-aviso-legal-ver">Ver →</span>
+  </button>
+
+  <form id="form-crear">
+    <input type="hidden" name="id" id="input-id-legajo" value="">
+    <div class="panel">
+      <div class="panel-titulo"><span class="num">1</span> Datos personales</div>
+      <p class="panel-subtitulo">Información básica de identificación del paciente.</p>
+      <div class="grilla-campos">
+        <div class="campo">
+          <label>Nombre</label>
+          <input type="text" name="nombre" required placeholder="Ej: María">
+        </div>
+        <div class="campo">
+          <label>Apellido</label>
+          <input type="text" name="apellido" required placeholder="Ej: González">
+        </div>
+        <div class="campo">
+          <label>DNI</label>
+          <input type="text" name="dni" required placeholder="Ej: 34567890" inputmode="numeric">
+        </div>
+        <div class="campo">
+          <label>Sexo</label>
+          <select name="sexo" required>
+            <option value="" disabled selected>Seleccionar…</option>
+            <option value="Femenino">Femenino</option>
+            <option value="Masculino">Masculino</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Fecha de nacimiento</label>
+          <input type="date" name="fecha_nacimiento" required id="input-fecha-nac">
+        </div>
+        <div class="campo">
+          <label>Edad <span class="opcional">(calculada automáticamente)</span></label>
+          <input type="text" id="input-edad-calculada" disabled placeholder="—">
+        </div>
+        <div class="campo">
+          <label>Teléfono <span class="opcional">(opcional)</span></label>
+          <input type="text" name="telefono" placeholder="Ej: 297 154-1234">
+        </div>
+        <div class="campo">
+          <label>Email <span class="opcional">(opcional)</span></label>
+          <input type="email" name="email" placeholder="Ej: maria@correo.com">
+        </div>
+        <div class="campo ancho-completo">
+          <label>Dirección <span class="opcional">(opcional)</span></label>
+          <input type="text" name="direccion" placeholder="Ej: Av. Rivadavia 1234, Comodoro Rivadavia">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-titulo"><span class="num">2</span> Cobertura de salud</div>
+      <p class="panel-subtitulo">Si no figura la obra social del paciente, podés agregarla al instante.</p>
+      <div class="grilla-campos">
+        <div class="campo">
+          <label>Obra social</label>
+          <div class="fila-obra-social">
+            <select name="obra_social_id" id="select-obra-social"></select>
+            <button type="button" class="btn-agregar-obra" id="btn-agregar-obra" title="Agregar nueva obra social">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="campo">
+          <label>N° de afiliado <span class="opcional">(opcional)</span></label>
+          <input type="text" name="numero_afiliado" placeholder="Ej: 0123456789">
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-cuadro-clinico">
+      <div class="panel-titulo"><span class="num">3</span> Motivo y cuadro clínico</div>
+      <p class="panel-subtitulo">Qué trae al paciente a la consulta y lo que observaste inicialmente.</p>
+      <div class="grilla-campos">
+        <div class="campo ancho-completo">
+          <label>Motivo de consulta</label>
+          <textarea name="motivo_consulta" placeholder="Ej: Derivado por pediatra por retraso en adquisición del lenguaje."></textarea>
+        </div>
+        <div class="campo">
+          <label>Patología <span class="opcional">(opcional)</span></label>
+          <input type="text" name="patologia" placeholder="Ej: TEL, disfonía, afasia...">
+        </div>
+        <div class="campo">
+          <label>Síntomas <span class="opcional">(opcional)</span></label>
+          <input type="text" name="sintomas" placeholder="Ej: Dificultad articulatoria, voz ronca...">
+        </div>
+        <div class="campo ancho-completo">
+          <label>Observaciones generales <span class="opcional">(opcional)</span></label>
+          <textarea name="observaciones_generales" placeholder="Antecedentes, contexto familiar, otras notas relevantes..."></textarea>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-sesiones-iniciales">
+      <div class="panel-titulo"><span class="num">4</span> Sesiones / días de atención <span class="opcional">(opcional)</span></div>
+      <p class="panel-subtitulo">Agregá los días que atendiste al paciente y qué se trabajó en cada sesión. Podés seguir sumando sesiones después desde su ficha.</p>
+      <div class="lista-sesiones-form" id="lista-sesiones-form"></div>
+      <button type="button" class="btn-agregar-dia" id="btn-agregar-dia">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+        Agregar día de atención
+      </button>
+    </div>
+
+    <div class="barra-acciones-form">
+      <button type="button" class="btn btn-secundario" data-volver>Cancelar</button>
+      <button type="submit" class="btn btn-primario" id="btn-guardar-legajo">Guardar legajo</button>
+    </div>
+  </form>
+</template>
+
+<template id="tpl-sesion-form-item">
+  <div class="sesion-form-item">
+    <button type="button" class="quitar-sesion" title="Quitar este día">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+    <div class="grilla-campos">
+      <div class="campo">
+        <label>Fecha de atención</label>
+        <input type="date" class="campo-fecha-sesion" required>
+      </div>
+      <div class="campo">
+        <label>Próxima cita <span class="opcional">(opcional)</span></label>
+        <input type="date" class="campo-proxima-cita">
+      </div>
+      <div class="campo ancho-completo">
+        <label>¿Qué se trabajó en la sesión?</label>
+        <textarea class="campo-descripcion-sesion" required placeholder="Ej: Ejercicios de respiración y praxias linguales. Buena respuesta a estímulos visuales."></textarea>
+      </div>
+      <div class="campo ancho-completo">
+        <label>Evolución / notas <span class="opcional">(opcional)</span></label>
+        <textarea class="campo-evolucion-sesion" placeholder="Avances, dificultades, indicaciones para la familia..."></textarea>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-acceder">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver al panel
+      </button>
+      <h2>Acceder a legajos</h2>
+      <p class="desc">Buscá un paciente por DNI, nombre, fecha de atención u obra social.</p>
+    </div>
+  </div>
+
+  <div class="tabs-busqueda">
+    <button class="tab-busqueda activo" data-tipo="dni">Por DNI</button>
+    <button class="tab-busqueda" data-tipo="nombre">Por nombre</button>
+    <button class="tab-busqueda" data-tipo="fecha">Por fecha de atención</button>
+    <button class="tab-busqueda" data-tipo="obra_social">Por obra social</button>
+    <button class="tab-busqueda" data-tipo="sede">Por sede</button>
+  </div>
+
+  <div class="fila-buscador" id="fila-buscador">
+    <!-- Se genera dinámicamente según la pestaña activa -->
+  </div>
+
+  <div id="resultados-busqueda"></div>
+</template>
+
+<template id="tpl-borrar">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver al panel
+      </button>
+      <h2>Eliminar legajos</h2>
+      <p class="desc">Buscá el legajo que querés quitar del sistema activo. Quedará resguardado en la base histórica, accesible desde "Ver base histórica".</p>
+    </div>
+    <button class="btn btn-secundario btn-chico" id="btn-ver-papelera">Ver base histórica</button>
+  </div>
+
+  <div class="tabs-busqueda">
+    <button class="tab-busqueda activo" data-tipo="dni">Por DNI</button>
+    <button class="tab-busqueda" data-tipo="nombre">Por nombre</button>
+    <button class="tab-busqueda" data-tipo="fecha">Por fecha de atención</button>
+    <button class="tab-busqueda" data-tipo="obra_social">Por obra social</button>
+    <button class="tab-busqueda" data-tipo="sede">Por sede</button>
+  </div>
+
+  <div class="fila-buscador" id="fila-buscador"></div>
+
+  <div id="resultados-busqueda"></div>
+</template>
+
+<template id="tpl-agenda">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver al panel
+      </button>
+      <h2>Agenda</h2>
+      <p class="desc">Calendario de citas. Hacé clic en un día para ver o agendar turnos.</p>
+    </div>
+    <button class="btn btn-primario btn-chico" id="btn-nueva-cita">+ Agendar cita</button>
+  </div>
+
+  <div class="panel">
+    <div class="calendario-nav">
+      <button class="btn-icono" id="btn-mes-anterior" title="Mes anterior">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="calendario-mes-titulo" id="calendario-mes-titulo"></div>
+      <button class="btn-icono" id="btn-mes-siguiente" title="Mes siguiente">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+    <div class="calendario-dias-semana">
+      <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+    </div>
+    <div class="calendario-grilla" id="calendario-grilla"></div>
+  </div>
+
+  <div class="panel" id="panel-citas-dia">
+    <div class="panel-titulo" id="titulo-citas-dia">Citas</div>
+    <div id="lista-citas-dia" class="lista-resultados"></div>
+  </div>
+</template>
+
+<template id="tpl-modal-nueva-cita">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 480px;">
+      <h3>Agendar cita</h3>
+      <p>Buscá al paciente por DNI o nombre y elegí fecha y hora.</p>
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Paciente</label>
+        <input type="text" id="input-buscar-paciente-cita" placeholder="Escribí DNI, nombre o apellido...">
+        <div id="resultados-buscar-paciente-cita" class="resultados-autocompletar"></div>
+        <input type="hidden" id="input-paciente-id-cita">
+      </div>
+      <div class="grilla-campos" style="margin-bottom: 20px;">
+        <div class="campo">
+          <label>Fecha</label>
+          <input type="date" id="input-fecha-cita">
+        </div>
+        <div class="campo">
+          <label>Hora <span class="opcional">(opcional)</span></label>
+          <input type="time" id="input-hora-cita">
+        </div>
+        <div class="campo ancho-completo">
+          <label>Motivo <span class="opcional">(opcional)</span></label>
+          <input type="text" id="input-motivo-cita" placeholder="Ej: Control mensual">
+        </div>
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-nueva-cita">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-nueva-cita">Agendar</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-avisos-turnos">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 480px; max-height: 80vh; overflow-y: auto;">
+      <h3>Novedades de turnos</h3>
+      <p>Esto cambió desde la última vez que revisaste la agenda.</p>
+      <div id="lista-avisos-turnos" class="lista-resumen" style="margin-bottom: 20px;"></div>
+      <div class="acciones-modal">
+        <button class="btn btn-primario" id="btn-marcar-avisos-vistos" style="width:100%;">Entendido, marcar como visto</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-migrar-sede">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 420px;">
+      <h3>Cambiar de sede</h3>
+      <p id="texto-paciente-migrar-sede"></p>
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>Nueva sede</label>
+        <select id="select-nueva-sede"></select>
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-migrar-sede">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-migrar-sede">Migrar</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-mi-legajo">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver al panel
+      </button>
+      <h2>Mi legajo</h2>
+      <p class="desc">Tus datos registrados en el sistema. Si necesitás corregir algo, comunicarte con el administrador.</p>
+    </div>
+  </div>
+  <div id="contenido-mi-legajo">
+    <div class="cargando-pagina"><span class="spinner"></span></div>
+  </div>
+</template>
+
+<template id="tpl-servicios-plus">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver al panel
+      </button>
+      <h2>Servicios Plus</h2>
+      <p class="desc">Documentos y certificados adicionales para tus pacientes.</p>
+    </div>
+  </div>
+
+  <div class="grilla-menu" style="grid-template-columns: repeat(auto-fill, minmax(220px, 280px)); margin-bottom: 32px;">
+    <button class="tarjeta-menu" id="btn-ir-constancia-medica">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12h6m-6 4h6M9 8h1M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2h-4l-2-2H9L7 5H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+      </div>
+      <h3>Constancia médica</h3>
+      <p>Justificante de asistencia, exportable a PDF y validable con un token único.</p>
+      <span class="ir">Crear →</span>
+    </button>
+    <button class="tarjeta-menu" id="btn-ir-tratamiento-prolongado">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v8m-4-4h8M12 2a10 10 0 100 20 10 10 0 000-20z"/></svg>
+      </div>
+      <h3>Tratamiento prolongado</h3>
+      <p>Constancia de seguimiento continuo, con fecha de inicio y diagnóstico.</p>
+      <span class="ir">Crear →</span>
+    </button>
+    <button class="tarjeta-menu" id="btn-ir-receta">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+      </div>
+      <h3>Receta</h3>
+      <p>Indicaciones o medicación, exportable a PDF y validable con un token único.</p>
+      <span class="ir">Crear →</span>
+    </button>
+    <button class="tarjeta-menu" id="btn-ir-resumen-derivacion">
+      <div class="icono-tarjeta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+      </div>
+      <h3>Resumen de derivación</h3>
+      <p>Para compartir con otro profesional o institución, sin token público.</p>
+      <span class="ir">Crear →</span>
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="panel-titulo">Documentos emitidos</div>
+    <p class="panel-subtitulo">Las constancias y recetas se eliminan automáticamente 90 días después de emitidas. Los resúmenes de derivación no vencen.</p>
+    <div class="fila-buscador-usuarios" style="display:flex; gap:10px; align-items:center;">
+      <label style="font-size:0.85rem; color:var(--tinta-suave); white-space:nowrap;">Mostrar:</label>
+      <select id="select-filtro-documentos-plus" style="flex:1; padding:8px 12px; border:1.5px solid var(--linea); border-radius:var(--radio-chico); font-family:inherit; background:var(--crema);">
+        <option value="asistencia">Constancias de asistencia</option>
+        <option value="tratamiento">Constancias de tratamiento prolongado</option>
+        <option value="receta">Recetas</option>
+        <option value="derivacion">Resúmenes de derivación</option>
+      </select>
+    </div>
+    <div id="lista-constancias-emitidas"><div class="cargando-pagina chico"><span class="spinner"></span></div></div>
+  </div>
+</template>
+
+<template id="tpl-constancia-medica">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver-vista="servicios-plus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver a Servicios Plus
+      </button>
+      <h2 id="titulo-vista-constancia">Constancia médica</h2>
+      <p class="desc" id="desc-vista-constancia">Justificante de asistencia a consulta, listo para exportar a PDF.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="campo" style="margin-bottom: 20px;">
+      <label>¿Cómo querés completar los datos del paciente?</label>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn btn-secundario btn-chico" id="btn-modo-con-legajo" type="button">Buscar en mis legajos</button>
+        <button class="btn btn-secundario btn-chico" id="btn-modo-sin-legajo" type="button">Sin necesidad de legajo</button>
+      </div>
+    </div>
+
+    <div id="bloque-buscar-legajo-constancia" class="oculto campo" style="margin-bottom: 20px;">
+      <label>Buscar paciente</label>
+      <input type="search" id="input-buscar-paciente-constancia" placeholder="Nombre o DNI…" autocomplete="off">
+      <div id="resultados-busqueda-paciente-constancia" class="lista-resultados" style="margin-top:10px;"></div>
+      <div id="paciente-elegido-constancia" class="oculto" style="margin-top:12px; padding:12px 16px; background:var(--crema); border-radius:var(--radio-chico);"></div>
+    </div>
+
+    <form id="form-constancia-medica" class="oculto">
+      <div class="grilla-campos" style="margin-bottom: 14px;">
+        <div class="campo ancho-completo">
+          <label>Nombre y apellido completo</label>
+          <input type="text" id="input-nombre-constancia">
+        </div>
+        <div class="campo">
+          <label>DNI o CUIL</label>
+          <input type="text" id="input-dni-constancia">
+        </div>
+        <div class="campo" id="campo-lugarnac-constancia">
+          <label>Ciudad y provincia de nacimiento (opcional)</label>
+          <input type="text" id="input-lugarnac-constancia" placeholder="Ej: Comodoro Rivadavia, Chubut">
+        </div>
+      </div>
+
+      <div id="campos-tratamiento-constancia" class="oculto">
+        <div class="grilla-campos" style="margin-bottom: 14px;">
+          <div class="campo">
+            <label>En tratamiento desde</label>
+            <input type="date" id="input-tratamiento-desde-constancia">
+          </div>
+          <div class="campo ancho-completo">
+            <label>Diagnóstico / motivo del tratamiento (opcional)</label>
+            <textarea id="input-diagnostico-constancia" rows="2"></textarea>
+          </div>
+        </div>
+      </div>
+
+      <div id="campos-receta-constancia" class="oculto">
+        <div class="campo" style="margin-bottom: 14px;">
+          <label>Diagnóstico / motivo (opcional)</label>
+          <textarea id="input-diagnostico-receta" rows="2"></textarea>
+        </div>
+        <div class="campo" style="margin-bottom: 14px;">
+          <label>Indicaciones</label>
+          <textarea id="input-indicaciones-receta" rows="5" placeholder="Medicación, dosis, frecuencia, ejercicios indicados, etc."></textarea>
+        </div>
+      </div>
+
+      <div id="campo-lugartrabajo-constancia" class="campo" style="margin-bottom: 14px;">
+        <label>Lugar de trabajo o institución (opcional)</label>
+        <input type="text" id="input-lugartrabajo-constancia" placeholder="Dejalo vacío para 'ante las autoridades que lo requieran'">
+        <span class="ayuda">Si lo completás, el certificado va a decir "ante las autoridades de [esto]" en vez del texto genérico.</span>
+      </div>
+
+      <div class="campo" style="margin-bottom: 8px;">
+        <label>Fecha de emisión</label>
+        <input type="text" value="Hoy" disabled style="background:var(--crema); color:var(--tinta-suave);">
+        <span class="ayuda">Se completa automáticamente con la fecha de hoy.</span>
+      </div>
+
+      <div class="acciones-modal" style="justify-content:flex-start; margin-top:24px;">
+        <button type="submit" class="btn btn-primario" id="btn-confirmar-constancia">Generar</button>
+      </div>
+    </form>
+  </div>
+</template>
+
+<template id="tpl-resumen-derivacion">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver-vista="servicios-plus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver a Servicios Plus
+      </button>
+      <h2>Resumen de derivación</h2>
+      <p class="desc">Para compartir con otro profesional o institución. No tiene token de validación pública.</p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="campo" style="margin-bottom: 20px;">
+      <label>¿Cómo querés completar los datos del paciente?</label>
+      <div style="display:flex; gap:10px; margin-top:8px;">
+        <button class="btn btn-secundario btn-chico" id="btn-modo-con-legajo-derivacion" type="button">Buscar en mis legajos</button>
+        <button class="btn btn-secundario btn-chico" id="btn-modo-sin-legajo-derivacion" type="button">Sin necesidad de legajo</button>
+      </div>
+    </div>
+
+    <div id="bloque-buscar-legajo-derivacion" class="oculto campo" style="margin-bottom: 20px;">
+      <label>Buscar paciente</label>
+      <input type="search" id="input-buscar-paciente-derivacion" placeholder="Nombre o DNI…" autocomplete="off">
+      <div id="resultados-busqueda-paciente-derivacion" class="lista-resultados" style="margin-top:10px;"></div>
+      <div id="paciente-elegido-derivacion" class="oculto" style="margin-top:12px; padding:12px 16px; background:var(--crema); border-radius:var(--radio-chico);"></div>
+    </div>
+
+    <form id="form-resumen-derivacion" class="oculto">
+      <div class="grilla-campos" style="margin-bottom: 14px;">
+        <div class="campo ancho-completo">
+          <label>Nombre y apellido completo</label>
+          <input type="text" id="input-nombre-derivacion">
+        </div>
+        <div class="campo ancho-completo">
+          <label>DNI o CUIL</label>
+          <input type="text" id="input-dni-derivacion">
+        </div>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Dirigido a (profesional o institución, opcional)</label>
+        <input type="text" id="input-destinatario-derivacion" placeholder="Ej: Dr. Pérez, Hospital Regional">
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Motivo de consulta (opcional)</label>
+        <textarea id="input-motivo-derivacion" rows="2"></textarea>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Diagnóstico (opcional)</label>
+        <textarea id="input-diagnostico-derivacion" rows="2"></textarea>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Tratamiento actual (opcional)</label>
+        <textarea id="input-tratamiento-derivacion" rows="2"></textarea>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Observaciones (opcional)</label>
+        <textarea id="input-observaciones-derivacion" rows="2"></textarea>
+      </div>
+
+      <div class="acciones-modal" style="justify-content:flex-start; margin-top:24px;">
+        <button type="submit" class="btn btn-primario" id="btn-confirmar-derivacion">Generar resumen</button>
+      </div>
+    </form>
+  </div>
+</template>
+
+<template id="tpl-dashboard">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver al panel
+      </button>
+      <h2>Estadísticas</h2>
+      <p class="desc">Un vistazo rápido al estado general del consultorio.</p>
+    </div>
+    <button class="btn btn-secundario btn-chico" id="btn-exportar-todo">Descargar backup de todos mis legajos</button>
+  </div>
+
+  <div id="contenido-dashboard">
+    <div class="cargando-pagina"><span class="spinner"></span> Calculando estadísticas...</div>
+  </div>
+</template>
+
+<template id="tpl-tarjeta-stat">
+  <div class="tarjeta-stat">
+    <div class="tarjeta-stat-valor"></div>
+    <div class="tarjeta-stat-etiqueta"></div>
+    <div class="tarjeta-stat-detalle"></div>
+  </div>
+</template>
+
+<template id="tpl-configuracion">
+  <div class="encabezado-seccion">
+    <div>
+      <button class="volver" data-volver>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+        Volver al panel
+      </button>
+      <h2>Sedes, usuarios y registro</h2>
+      <p class="desc">Gestioná las sedes del consultorio, quién puede entrar al sistema y revisá el historial de cambios.</p>
+    </div>
+  </div>
+
+  <div class="tabs-busqueda">
+    <button class="tab-busqueda activo" data-tab-config="sedes">Sedes</button>
+    <button class="tab-busqueda" data-tab-config="usuarios">Usuarios</button>
+    <button class="tab-busqueda" data-tab-config="historial">Historial de cambios</button>
+    <button class="tab-busqueda" data-tab-config="version">Versión del sistema</button>
+    <button class="tab-busqueda" data-tab-config="reportes">Reportes por sede</button>
+    <button class="tab-busqueda" data-tab-config="papelera">Papelera</button>
+    <button class="tab-busqueda" data-tab-config="huerfanos">Legajos huérfanos</button>
+    <button class="tab-busqueda" data-tab-config="calendario">Calendario de licencias</button>
+    <button class="tab-busqueda" data-tab-config="papelera-derivaciones">Papelera de derivaciones</button>
+  </div>
+
+  <div id="panel-config-sedes">
+    <div id="aviso-licencias-por-vencer" class="oculto"></div>
+
+    <div class="panel" style="margin-bottom: 18px;">
+      <div class="encabezado-panel-accion">
+        <div>
+          <div class="panel-titulo">Nombre de la institución</div>
+          <p class="panel-subtitulo">Reemplaza "Del Austral" en toda la interfaz: título, login, PDF exportados y la app instalable.</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-top:14px;">
+        <div class="campo" style="flex:1; min-width:220px; margin-bottom:0;">
+          <label>Nombre</label>
+          <input type="text" id="input-nombre-institucion" placeholder="Ej: Hospital Regional" maxlength="150">
+        </div>
+        <button class="btn btn-primario btn-chico" id="btn-guardar-nombre-institucion">Guardar</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="encabezado-panel-accion">
+        <div>
+          <div class="panel-titulo">Sedes del consultorio</div>
+          <p class="panel-subtitulo">Cada sede agrupa profesionales y administrativas que atienden ahí.</p>
+        </div>
+        <button class="btn btn-primario btn-chico" id="btn-agregar-sede">+ Agregar sede</button>
+      </div>
+      <div id="lista-sedes-config" class="lista-resultados"></div>
+    </div>
+  </div>
+
+  <div id="panel-config-usuarios" class="oculto">
+    <div class="panel">
+      <div class="encabezado-panel-accion">
+        <div>
+          <div class="panel-titulo">Personas con acceso</div>
+          <p class="panel-subtitulo">Cada una entra con su propio PIN. La administrativa no ve contenido clínico.</p>
+        </div>
+        <button class="btn btn-primario btn-chico" id="btn-agregar-usuario">+ Agregar persona</button>
+      </div>
+      <div class="fila-buscador-usuarios">
+        <input type="search" id="input-buscar-profesional" placeholder="Buscar por nombre, DNI o número de legajo…" autocomplete="off">
+      </div>
+      <div id="lista-usuarios" class="lista-resultados"></div>
+    </div>
+  </div>
+
+  <div id="panel-config-historial" class="oculto">
+    <div class="panel">
+      <div class="panel-titulo">Historial de cambios</div>
+      <p class="panel-subtitulo">Registro de qué se creó, editó o eliminó, y quién lo hizo.</p>
+      <div class="fila-buscador-usuarios" style="display:flex; gap:10px; align-items:center;">
+        <label style="font-size:0.85rem; color:var(--tinta-suave); white-space:nowrap;">Mostrar:</label>
+        <select id="select-filtro-historial" style="flex:1; padding:8px 12px; border:1.5px solid var(--linea); border-radius:var(--radio-chico); font-family:inherit; background:var(--crema);">
+          <option value="">Todo</option>
+          <option value="usuario">Solo profesionales/administrativas (altas, bajas, licencias)</option>
+          <option value="paciente">Solo legajos de pacientes</option>
+          <option value="sesion">Solo sesiones clínicas</option>
+        </select>
+      </div>
+      <div id="lista-historial" class="lista-historial"></div>
+      <div class="paginado-historial" id="paginado-historial"></div>
+    </div>
+  </div>
+
+  <div id="panel-config-version" class="oculto">
+    <div class="panel">
+      <div class="encabezado-panel-accion">
+        <div>
+          <div class="panel-titulo">Versión del sistema</div>
+          <p class="panel-subtitulo">Compara los archivos del servidor contra la última actualización entregada, para detectar si algo quedó con una versión vieja sin actualizar.</p>
+        </div>
+        <button class="btn btn-secundario btn-chico" id="btn-revisar-version">Revisar ahora</button>
+      </div>
+      <div id="resumen-version" class="resumen-version"></div>
+      <div id="lista-archivos-version" class="lista-archivos-version"></div>
+    </div>
+  </div>
+
+  <div id="panel-config-reportes" class="oculto">
+    <div class="panel">
+      <div class="panel-titulo">Reportes por sede</div>
+      <p class="panel-subtitulo">Resumen de cada sede activa: cuántos profesionales atienden ahí, pacientes totales, y la actividad de este mes.</p>
+      <div id="lista-reportes-sede" class="lista-reportes-sede"></div>
+    </div>
+  </div>
+
+  <div id="panel-config-papelera" class="oculto">
+    <div class="panel">
+      <div class="panel-titulo">Papelera de legajos eliminados</div>
+      <p class="panel-subtitulo">Elegí una sede y un profesional para ver los legajos que eliminó, y recuperarlos asignándolos a otro profesional de esa misma sede.</p>
+      <div class="fila-selectores-papelera">
+        <div class="campo">
+          <label>Sede</label>
+          <select id="select-sede-papelera-dev"><option value="">Elegí una sede…</option></select>
+        </div>
+        <div class="campo">
+          <label>Profesional (de quién ver la papelera)</label>
+          <select id="select-profesional-papelera-dev" disabled><option value="">Elegí primero una sede…</option></select>
+        </div>
+      </div>
+      <div id="lista-papelera-dev" class="lista-resultados"></div>
+    </div>
+  </div>
+
+  <div id="panel-config-papelera-derivaciones" class="oculto">
+    <div class="panel">
+      <div class="panel-titulo">Papelera de resúmenes de derivación</div>
+      <p class="panel-subtitulo">Elegí una sede y un profesional para ver los resúmenes que eliminó, y recuperarlos asignándolos a otro profesional de esa misma sede.</p>
+      <div class="fila-selectores-papelera">
+        <div class="campo">
+          <label>Sede</label>
+          <select id="select-sede-papelera-derivaciones-dev"><option value="">Elegí una sede…</option></select>
+        </div>
+        <div class="campo">
+          <label>Profesional (de quién ver la papelera)</label>
+          <select id="select-profesional-papelera-derivaciones-dev" disabled><option value="">Elegí primero una sede…</option></select>
+        </div>
+      </div>
+      <div id="lista-papelera-derivaciones-dev" class="lista-resultados"></div>
+    </div>
+  </div>
+
+  <div id="panel-config-huerfanos" class="oculto">
+    <div class="panel">
+      <div class="panel-titulo">Legajos de profesionales sin acceso</div>
+      <p class="panel-subtitulo">Estos legajos siguen activos (no fueron eliminados), pero su profesional ya no tiene acceso al sistema. Elegí uno para ver sus pacientes y transferirlos a otro profesional de la misma sede.</p>
+      <div class="campo" style="margin-bottom: 20px; max-width: 420px;">
+        <label>Profesional desactivado</label>
+        <select id="select-profesional-huerfano"><option value="">Elegí un profesional…</option></select>
+      </div>
+      <div id="lista-huerfanos-dev" class="lista-resultados"></div>
+    </div>
+  </div>
+
+  <div id="panel-config-calendario" class="oculto">
+    <div class="panel">
+      <div class="panel-titulo">Calendario de vencimientos de licencia</div>
+      <p class="panel-subtitulo">Cada día marcado muestra qué profesionales vencen ese día, para planificar renovaciones con anticipación.</p>
+      <div class="encabezado-calendario-licencias">
+        <button class="btn-icono" id="btn-mes-anterior-licencias" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+        <span id="titulo-mes-licencias" class="titulo-mes-calendario"></span>
+        <button class="btn-icono" id="btn-mes-siguiente-licencias" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      </div>
+      <div class="grilla-dias-semana">
+        <span>Dom</span><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span>
+      </div>
+      <div id="grilla-calendario-licencias" class="grilla-calendario-licencias"></div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-recuperar-legajo">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 440px;">
+      <h3>Recuperar legajo</h3>
+      <p id="texto-paciente-recuperar"></p>
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>Asignar a qué profesional</label>
+        <select id="select-nuevo-profesional-recuperar"></select>
+        <span class="ayuda">Solo se muestran profesionales que atienden en la misma sede donde estaba este legajo.</span>
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-recuperar-legajo">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-recuperar-legajo">Recuperar legajo</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-recuperar-derivacion">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 440px;">
+      <h3>Recuperar resumen de derivación</h3>
+      <p id="texto-derivacion-recuperar"></p>
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>Asignar a qué profesional</label>
+        <select id="select-nuevo-profesional-recuperar-derivacion"></select>
+        <span class="ayuda">Solo se muestran profesionales que atienden en la misma sede donde estaba este resumen.</span>
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-recuperar-derivacion">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-recuperar-derivacion">Recuperar resumen</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-transferir-huerfano">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 440px;">
+      <h3>Transferir legajo</h3>
+      <p id="texto-paciente-transferir"></p>
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>Asignar a qué profesional</label>
+        <select id="select-nuevo-profesional-transferir"></select>
+        <span class="ayuda">Solo se muestran profesionales que atienden en la misma sede donde está este paciente.</span>
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-transferir-huerfano">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-transferir-huerfano">Transferir legajo</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-nueva-sede">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 420px;">
+      <h3>Agregar sede</h3>
+      <p>Es el lugar físico donde atiende uno o más profesionales.</p>
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>Nombre de la sede</label>
+        <input type="text" id="input-nombre-nueva-sede" placeholder="Ej: Clínica del Valle">
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-nueva-sede">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-nueva-sede">Crear sede</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-nuevo-profesional">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 560px; max-height: 90vh; overflow-y: auto;">
+      <h3>Nuevo profesional</h3>
+      <p>Completá el legajo del profesional. Va a poder entrar al sistema con su PIN.</p>
+
+      <div class="grilla-campos" style="margin-bottom: 4px;">
+        <div class="campo">
+          <label>Título</label>
+          <select id="input-titulo-prof">
+            <option value="Dr.">Dr.</option>
+            <option value="Dra.">Dra.</option>
+            <option value="Lic.">Lic.</option>
+            <option value="Tec.">Tec.</option>
+            <option value="Mg.">Mg.</option>
+            <option value="Prof.">Prof.</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Nombre</label>
+          <input type="text" id="input-nombre-prof" placeholder="Ej: Arian">
+        </div>
+        <div class="campo ancho-completo">
+          <label>Apellido</label>
+          <input type="text" id="input-apellido-prof" placeholder="Ej: Lorenz">
+        </div>
+        <div class="campo">
+          <label>DNI</label>
+          <input type="text" id="input-dni-prof" inputmode="numeric" placeholder="Ej: 32456789">
+        </div>
+        <div class="campo">
+          <label>Fecha de nacimiento</label>
+          <input type="date" id="input-fechanac-prof">
+        </div>
+        <div class="campo ancho-completo">
+          <label>Lugar de nacimiento</label>
+          <input type="text" id="input-lugarnac-prof" placeholder="Ej: Córdoba, Argentina">
+        </div>
+        <div class="campo ancho-completo">
+          <label>Especialidad</label>
+          <input type="text" id="input-especialidad-prof" placeholder="Ej: Fonoaudiología, Traumatología…">
+        </div>
+        <div class="campo">
+          <label>Matrícula nacional (M.N.)</label>
+          <input type="text" id="input-mn-prof" placeholder="Opcional, ej: 2020">
+        </div>
+        <div class="campo">
+          <label>Matrícula provincial (M.P.)</label>
+          <input type="text" id="input-mp-prof" placeholder="Opcional, ej: 2080">
+        </div>
+        <div class="campo">
+          <label>Correo electrónico</label>
+          <input type="email" id="input-email-prof" placeholder="Ej: arian@clinica.com">
+        </div>
+        <div class="campo">
+          <label>Número de celular</label>
+          <input type="text" id="input-tel-prof" inputmode="tel" placeholder="Ej: +54 9 297 123 4567">
+        </div>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Sede(s) donde atiende</label>
+        <div id="lista-checkboxes-sedes-prof" class="lista-checkboxes-sedes"></div>
+      </div>
+
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>PIN de acceso (4 números)</label>
+        <input type="text" id="input-pin-prof" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Ej: 4821" class="input-pin-texto">
+      </div>
+
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>Duración de la licencia</label>
+        <select id="input-licencia-dias-prof">
+          <option value="">Indeterminada (sin vencimiento)</option>
+          <option value="7">7 días</option>
+          <option value="15">15 días</option>
+          <option value="30">30 días</option>
+          <option value="60">60 días</option>
+          <option value="90">90 días</option>
+          <option value="120">120 días</option>
+        </select>
+        <span class="ayuda">Si se vence, el profesional queda suspendido automáticamente y no puede entrar hasta que renueves la licencia.</span>
+      </div>
+
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-nuevo-profesional">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-nuevo-profesional">Crear legajo</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-editar-legajo-profesional">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 560px; max-height: 90vh; overflow-y: auto;">
+      <h3>Editar legajo</h3>
+      <p>Los cambios se guardan al instante. El PIN y las sedes se gestionan por separado.</p>
+
+      <div class="grilla-campos" style="margin-bottom: 4px;">
+        <div class="campo">
+          <label>Título</label>
+          <select id="input-titulo-editar-prof">
+            <option value="Dr.">Dr.</option>
+            <option value="Dra.">Dra.</option>
+            <option value="Lic.">Lic.</option>
+            <option value="Tec.">Tec.</option>
+            <option value="Mg.">Mg.</option>
+            <option value="Prof.">Prof.</option>
+            <option value="Otro">Otro</option>
+          </select>
+        </div>
+        <div class="campo">
+          <label>Nombre</label>
+          <input type="text" id="input-nombre-editar-prof">
+        </div>
+        <div class="campo ancho-completo">
+          <label>Apellido</label>
+          <input type="text" id="input-apellido-editar-prof">
+        </div>
+        <div class="campo">
+          <label>DNI</label>
+          <input type="text" id="input-dni-editar-prof" inputmode="numeric">
+        </div>
+        <div class="campo">
+          <label>Fecha de nacimiento</label>
+          <input type="date" id="input-fechanac-editar-prof">
+        </div>
+        <div class="campo ancho-completo">
+          <label>Lugar de nacimiento</label>
+          <input type="text" id="input-lugarnac-editar-prof">
+        </div>
+        <div class="campo ancho-completo">
+          <label>Especialidad</label>
+          <input type="text" id="input-especialidad-editar-prof">
+        </div>
+        <div class="campo">
+          <label>Matrícula nacional (M.N.)</label>
+          <input type="text" id="input-mn-editar-prof" placeholder="Opcional">
+        </div>
+        <div class="campo">
+          <label>Matrícula provincial (M.P.)</label>
+          <input type="text" id="input-mp-editar-prof" placeholder="Opcional">
+        </div>
+        <div class="campo">
+          <label>Correo electrónico</label>
+          <input type="email" id="input-email-editar-prof">
+        </div>
+        <div class="campo">
+          <label>Número de celular</label>
+          <input type="text" id="input-tel-editar-prof" inputmode="tel">
+        </div>
+      </div>
+
+      <div class="acciones-modal" style="margin-top: 16px;">
+        <button class="btn btn-secundario" id="btn-cancelar-editar-profesional">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-editar-profesional">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-nueva-administrativa">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 420px;">
+      <h3>Nueva administrativa</h3>
+      <p>Va a poder entrar al sistema con su propio PIN de 4 números, para gestionar la agenda y datos de contacto.</p>
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Nombre completo</label>
+        <input type="text" id="input-nombre-nueva-admin" placeholder="Ej: Florencia Suárez">
+      </div>
+      <div class="campo" style="margin-bottom: 14px;">
+        <label>Sede(s) donde trabaja</label>
+        <div id="lista-checkboxes-sedes-admin" class="lista-checkboxes-sedes"></div>
+      </div>
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>PIN de acceso (4 números)</label>
+        <input type="text" id="input-pin-nueva-admin" inputmode="numeric" pattern="[0-9]*" maxlength="4" placeholder="Ej: 4821" class="input-pin-texto">
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-nueva-admin">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-nueva-admin">Crear acceso</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-gestionar-sedes-usuario">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 460px;">
+      <h3>Gestionar sedes</h3>
+      <p id="texto-nombre-usuario-gestionar-sedes"></p>
+      <div class="campo" style="margin-bottom: 8px;">
+        <label>Sede(s) donde atiende</label>
+        <div id="lista-checkboxes-sedes-editar" class="lista-checkboxes-sedes"></div>
+      </div>
+      <div id="aviso-borrado-sedes" class="aviso-doble-confirmacion oculto" style="margin-top: 14px;"></div>
+      <div id="bloque-confirmar-borrado-sedes" class="oculto" style="margin-top: 14px;">
+        <p class="aviso-doble-confirmacion">Para confirmar este cambio, escribí <strong>ELIMINAR</strong> en el campo de abajo.</p>
+        <input type="text" id="input-confirmar-borrado-sedes" class="input-confirmar-texto" placeholder="Escribí ELIMINAR" autocomplete="off">
+      </div>
+      <div class="acciones-modal" style="margin-top: 20px;">
+        <button class="btn btn-secundario" id="btn-cancelar-gestionar-sedes">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-gestionar-sedes">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-tarjeta-paciente">
+  <div class="tarjeta-paciente" data-id="">
+    <div class="info-principal">
+      <div class="avatar-iniciales"></div>
+      <div>
+        <div class="nombre"></div>
+        <div class="meta"></div>
+      </div>
+    </div>
+    <div class="acciones-tarjeta"></div>
+  </div>
+</template>
+
+<template id="tpl-detalle-paciente">
+  <div class="encabezado-seccion">
+    <button class="volver" data-volver-busqueda>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Volver a resultados
+    </button>
+  </div>
+
+  <div class="panel">
+    <div class="ficha-cabecera">
+      <div class="ficha-identidad">
+        <div class="avatar-grande" id="detalle-avatar"></div>
+        <div>
+          <h2 id="detalle-nombre"></h2>
+          <div class="meta-linea" id="detalle-meta"></div>
+        </div>
+      </div>
+      <div style="display:flex; gap:10px; flex-wrap: wrap;">
+        <button class="btn btn-secundario btn-chico" id="btn-migrar-sede">Cambiar de sede</button>
+        <button class="btn btn-secundario btn-chico" id="btn-exportar-pdf">Exportar a PDF</button>
+        <button class="btn btn-secundario btn-chico" id="btn-editar-legajo">Editar datos</button>
+      </div>
+    </div>
+
+    <div id="aviso-legajo-recuperado" class="aviso-legajo-recuperado oculto"></div>
+
+    <div class="grilla-datos">
+      <div class="dato-box"><div class="etiqueta-dato">DNI</div><div class="valor-dato" id="dato-dni"></div></div>
+      <div class="dato-box"><div class="etiqueta-dato">Edad</div><div class="valor-dato" id="dato-edad"></div></div>
+      <div class="dato-box"><div class="etiqueta-dato">Sexo</div><div class="valor-dato" id="dato-sexo"></div></div>
+      <div class="dato-box"><div class="etiqueta-dato">Obra social</div><div class="valor-dato" id="dato-obra"></div></div>
+      <div class="dato-box"><div class="etiqueta-dato">Sede</div><div class="valor-dato" id="dato-sede"></div></div>
+    </div>
+
+    <div class="bloque-texto">
+      <h4>Motivo de consulta</h4>
+      <p id="dato-motivo"></p>
+    </div>
+    <div class="bloque-texto">
+      <h4>Patología</h4>
+      <p id="dato-patologia"></p>
+    </div>
+    <div class="bloque-texto">
+      <h4>Síntomas</h4>
+      <p id="dato-sintomas"></p>
+    </div>
+    <div class="bloque-texto">
+      <h4>Observaciones generales</h4>
+      <p id="dato-observaciones"></p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="encabezado-panel-accion">
+      <div>
+        <div class="panel-titulo">Próximas citas</div>
+        <p class="panel-subtitulo">Turnos agendados para este paciente.</p>
+      </div>
+      <button class="btn btn-secundario btn-chico" id="btn-agendar-cita-paciente">+ Agendar cita</button>
+    </div>
+    <div id="lista-citas-paciente" class="lista-resultados"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-titulo">Historial de sesiones</div>
+    <p class="panel-subtitulo">Registro cronológico de cada día de atención.</p>
+    <div class="linea-tiempo" id="linea-tiempo"></div>
+    <button class="btn btn-secundario btn-chico" id="btn-nueva-sesion" style="margin-top:18px;">+ Agregar nueva sesión</button>
+  </div>
+
+  <div class="panel">
+    <div class="encabezado-panel-accion">
+      <div>
+        <div class="panel-titulo">Archivos adjuntos</div>
+        <p class="panel-subtitulo">Estudios, informes o imágenes relacionadas con este paciente (PDF o imagen, máx. 15 MB).</p>
+      </div>
+      <label class="btn btn-secundario btn-chico" for="input-subir-adjunto" style="cursor:pointer;">+ Subir archivo</label>
+      <input type="file" id="input-subir-adjunto" accept=".pdf,.jpg,.jpeg,.png,.webp" class="oculto">
+    </div>
+    <div id="lista-adjuntos" class="lista-adjuntos"></div>
+  </div>
+</template>
+
+<template id="tpl-modal-aviso-legal">
+  <div class="overlay-modal">
+    <div class="modal modal-aviso-legal">
+      <button type="button" class="cerrar-modal-x" id="btn-cerrar-aviso-legal-x" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="aviso-legal-icono">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      </div>
+      <h3>Aviso de protección de datos personales</h3>
+      <p class="aviso-legal-subtitulo">Ley N.º 25.326 — Protección de Datos Personales</p>
+      <p>
+        Los datos que se registran en este legajo están protegidos por la Ley N.º 25.326 de Protección de
+        Datos Personales. Queda prohibida su divulgación a terceros, salvo que el paciente lo autorice
+        expresamente o exista una obligación legal que lo requiera.
+      </p>
+      <p>
+        El paciente debe ser informado de que sus datos se almacenan en un sistema privado y seguro, de uso
+        exclusivo del profesional tratante, y que tiene derecho a solicitar en cualquier momento el acceso,
+        la rectificación o la eliminación de su información, conforme a los artículos 14 a 16 de dicha ley.
+      </p>
+      <div class="acciones-modal" style="justify-content:center;">
+        <button class="btn btn-primario" id="btn-cerrar-aviso-legal">Entendido</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-confirmar-borrado">
+  <div class="overlay-modal">
+    <div class="modal modal-peligro">
+      <div class="icono-alerta">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+      </div>
+      <h3>⚠ ¿Realmente querés eliminar este legajo?</h3>
+      <p id="texto-confirmar-borrado"></p>
+      <p class="aviso-doble-confirmacion">Esta acción no se puede deshacer desde la búsqueda normal. Para confirmar, escribí <strong>ELIMINAR</strong> en el campo de abajo.</p>
+      <input type="text" id="input-confirmar-borrado" class="input-confirmar-texto" placeholder="Escribí ELIMINAR" autocomplete="off">
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-borrado">Cancelar</button>
+        <button class="btn btn-peligro" id="btn-confirmar-borrado" disabled>Sí, eliminar definitivamente</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-obra-social">
+  <div class="overlay-modal">
+    <div class="modal">
+      <h3>Agregar obra social</h3>
+      <p>Se guardará en el listado para usarla en este y futuros legajos.</p>
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>Nombre de la obra social</label>
+        <input type="text" id="input-nueva-obra" placeholder="Ej: Apross">
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-obra">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-obra">Agregar</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-nueva-sesion">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 560px;">
+      <h3>Agregar sesión</h3>
+      <p>Registrá un nuevo día de atención para este paciente.</p>
+
+      <div class="campo" style="margin-bottom: 16px;">
+        <label>Usar plantilla de evolución <span class="opcional">(opcional)</span></label>
+        <div class="fila-obra-social">
+          <select id="select-plantilla-sesion">
+            <option value="">Sin plantilla — escribir desde cero</option>
+          </select>
+          <button type="button" class="btn-agregar-obra" id="btn-gestionar-plantillas" title="Crear o editar plantillas">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9M16.5 3.5a2.121 2.121 0 113 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          </button>
+        </div>
+        <span class="ayuda">Elegir una plantilla completa el texto de abajo; podés editarlo libremente después.</span>
+      </div>
+
+      <div class="grilla-campos" style="margin-bottom: 20px;">
+        <div class="campo">
+          <label>Fecha de atención</label>
+          <input type="date" id="input-fecha-nueva-sesion">
+        </div>
+        <div class="campo">
+          <label>Próxima cita <span class="opcional">(opcional)</span></label>
+          <input type="date" id="input-proxima-nueva-sesion">
+        </div>
+        <div class="campo ancho-completo">
+          <label>¿Qué se trabajó?</label>
+          <textarea id="input-descripcion-nueva-sesion"></textarea>
+        </div>
+        <div class="campo ancho-completo">
+          <label>Evolución / notas <span class="opcional">(opcional)</span></label>
+          <textarea id="input-evolucion-nueva-sesion"></textarea>
+        </div>
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-nueva-sesion">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-nueva-sesion">Guardar sesión</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-editar-sesion">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 560px;">
+      <h3>Editar sesión</h3>
+      <p>Corregí los datos de este día de atención.</p>
+      <div class="grilla-campos" style="margin-bottom: 20px;">
+        <div class="campo">
+          <label>Fecha de atención</label>
+          <input type="date" id="input-fecha-editar-sesion">
+        </div>
+        <div class="campo ancho-completo">
+          <label>¿Qué se trabajó?</label>
+          <textarea id="input-descripcion-editar-sesion"></textarea>
+        </div>
+        <div class="campo ancho-completo">
+          <label>Evolución / notas <span class="opcional">(opcional)</span></label>
+          <textarea id="input-evolucion-editar-sesion"></textarea>
+        </div>
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-editar-sesion">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-editar-sesion">Guardar cambios</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-gestionar-plantillas">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 600px; max-height: 82vh; overflow-y:auto;">
+      <h3>Plantillas de evolución</h3>
+      <p>Creá textos reutilizables para agilizar el registro de sesiones.</p>
+
+      <div id="lista-plantillas" class="lista-plantillas"></div>
+
+      <div class="panel-plantilla-nueva">
+        <div class="campo" style="margin-bottom: 12px;">
+          <label>Nombre de la plantilla</label>
+          <input type="text" id="input-nombre-plantilla" placeholder="Ej: Control de rutina">
+        </div>
+        <div class="campo" style="margin-bottom: 16px;">
+          <label>Contenido</label>
+          <textarea id="input-contenido-plantilla" placeholder="Escribí el texto base que querés reutilizar..." style="min-height: 110px;"></textarea>
+        </div>
+        <button class="btn btn-secundario btn-chico" id="btn-guardar-plantilla">+ Guardar como nueva plantilla</button>
+      </div>
+
+      <div class="acciones-modal">
+        <button class="btn btn-primario" id="btn-cerrar-gestionar-plantillas">Listo</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-papelera">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 640px; max-height: 80vh; overflow-y:auto;">
+      <h3>Base histórica de legajos eliminados</h3>
+      <p>Estos legajos ya no están en el sistema activo, pero quedan resguardados acá para tu consulta.</p>
+      <div id="lista-papelera" class="lista-resultados"></div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cerrar-papelera">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<template id="tpl-modal-descripcion-adjunto">
+  <div class="overlay-modal">
+    <div class="modal" style="max-width: 440px;">
+      <h3>Subir archivo</h3>
+      <p id="texto-nombre-archivo-subir"></p>
+      <div class="campo" style="margin-bottom: 20px;">
+        <label>Descripción <span class="opcional">(opcional)</span></label>
+        <input type="text" id="input-descripcion-adjunto" placeholder="Ej: Radiografía de tórax, control mayo 2026">
+      </div>
+      <div class="acciones-modal">
+        <button class="btn btn-secundario" id="btn-cancelar-subir-adjunto">Cancelar</button>
+        <button class="btn btn-primario" id="btn-confirmar-subir-adjunto">Subir archivo</button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script src="assets/js/app.js"></script>
+</body>
+</html>

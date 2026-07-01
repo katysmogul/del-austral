@@ -1,0 +1,22 @@
+{
+  "version": "v37",
+  "fecha": "2026-06-30",
+  "descripcion": "Corrige el link de validación de constancias: ahora incluye la carpeta real de la institución (ej: /hospital-regional/) en vez de asumir que el sitio vive en la raíz del dominio",
+  "archivos_criticos": {
+    "index.html": "ddec69026841d44c9beba0939de75c9f",
+    "assets/js/app.js": "d50dcb6cbe544fb3fdded2f8b5c51104",
+    "assets/css/estilos.css": "b4b8ff61d69a0782528ccdc3d4ad4e78",
+    "api/auth.php": "93dbfb71431fb8f9f7ba77b46235f4e3",
+    "api/citas.php": "7622c3facffd9fb671fa63494be56124",
+    "api/pacientes.php": "c347f3d3b6a5d1cad8cd42243d7900da",
+    "api/adjuntos.php": "8da3f85e26239072953298c60dcb5540",
+    "api/admin.php": "b0f9dbf5039e62dc5c0692268ce46613",
+    "api/constancias.php": "92de5610656b9343ac8056d015e8d238",
+    "confirmar_turno.php": "120386a6705e71557cf3a9c7d99c096a",
+    "exportar.php": "69bed4ed7f252d432f2484b744691106",
+    "exportar_constancia.php": "5ce113b10cf13d6a7eb33e18ce99850b",
+    "exportar_derivacion.php": "6a63d35011e79377cfc57696b00c91dc",
+    "validar_constancia.php": "11ac6b4334a8ccd900acf2570bf472c4",
+    "manifest.php": "7e73510530855dcb145c5a90a390546e"
+  }
+}

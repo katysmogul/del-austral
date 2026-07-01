@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Panel Maestro — Del Austral</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --crema: #FFF9F0;
+    --blanco: #FFFFFF;
+    --tinta: #2B2140;
+    --tinta-suave: #8983A3;
+    --violeta: #7C5CFC;
+    --violeta-claro: #EFE9FF;
+    --violeta-oscuro: #5B3FE0;
+    --lima: #2ECC8F;
+    --lima-claro: #DEFBEE;
+    --naranja: #FF9F43;
+    --naranja-claro: #FFF1DE;
+    --rosa: #FF6B81;
+    --rosa-claro: #FFE8EC;
+    --cielo: #3DAEEA;
+    --cielo-claro: #E4F5FF;
+    --amarillo: #FFCC33;
+    --borde: #EFE8FB;
+    --font-titulo: 'Fredoka', sans-serif;
+    --font-texto: 'Inter', sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font-texto);
+    background: var(--crema);
+    color: var(--tinta);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.5;
+  }
+
+  ::selection { background: var(--violeta-claro); color: var(--violeta-oscuro); }
+  a { color: var(--violeta); text-decoration: none; font-weight: 600; }
+  a:hover { text-decoration: underline; }
+
+  /* Blobs de fondo decorativos, bien coloridos */
+  .blob-fondo {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(60px);
+    opacity: 0.35;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .blob-1 { width: 420px; height: 420px; background: var(--violeta); top: -120px; right: -100px; }
+  .blob-2 { width: 380px; height: 380px; background: var(--lima); bottom: -140px; left: -100px; }
+  .blob-3 { width: 300px; height: 300px; background: var(--amarillo); top: 40%; right: 10%; opacity: 0.18; }
+
+  h1, h2, h3 { font-family: var(--font-titulo); }
+
+  /* ============== LOGIN ============== */
+  .contenedor-login {
+    position: relative; z-index: 1;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+  .tarjeta-login {
+    max-width: 400px;
+    width: 100%;
+    background: var(--blanco);
+    border-radius: 28px;
+    padding: 44px 38px;
+    box-shadow: 0 24px 60px -12px rgba(124,92,252,0.25), 0 4px 16px rgba(43,33,64,0.06);
+  }
+  .marca-login { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .marca-login .emoji-marca {
+    font-size: 2rem;
+    width: 52px; height: 52px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--violeta-claro);
+    border-radius: 16px;
+  }
+  .marca-login .nombre-marca { font-family: var(--font-titulo); font-weight: 600; font-size: 1.05rem; color: var(--tinta); }
+  .marca-login .subt-marca { font-size: 0.76rem; color: var(--tinta-suave); }
+
+  .tarjeta-login h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--tinta);
+  }
+  .tarjeta-login p { font-size: 0.9rem; color: var(--tinta-suave); margin-bottom: 26px; }
+
+  label {
+    display: block;
+    font-family: var(--font-texto);
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--tinta);
+    margin-bottom: 8px;
+  }
+  input[type="password"], input[type="text"] {
+    width: 100%;
+    background: var(--crema);
+    border: 2px solid var(--borde);
+    border-radius: 14px;
+    padding: 13px 16px;
+    color: var(--tinta);
+    font-family: var(--font-texto);
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+  }
+  input::placeholder { color: #C4BEDA; }
+  input:focus {
+    outline: none;
+    border-color: var(--violeta);
+    background: var(--blanco);
+  }
+  select {
+    width: 100%;
+    background: var(--crema);
+    border: 2px solid var(--borde);
+    border-radius: 14px;
+    padding: 13px 16px;
+    color: var(--tinta);
+    font-family: var(--font-texto);
+    font-size: 0.95rem;
+    margin-bottom: 16px;
+    cursor: pointer;
+  }
+  select:focus { outline: none; border-color: var(--violeta); }
+
+  button {
+    width: 100%;
+    background: var(--violeta);
+    color: white;
+    border: none;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-family: var(--font-texto);
+    font-weight: 700;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+    box-shadow: 0 6px 16px -4px rgba(124,92,252,0.5);
+  }
+  button:hover { background: var(--violeta-oscuro); transform: translateY(-1px); box-shadow: 0 10px 20px -4px rgba(124,92,252,0.55); }
+  button:active { transform: translateY(0) scale(0.98); }
+  button.secundario {
+    background: var(--blanco);
+    color: var(--tinta-suave);
+    border: 2px solid var(--borde);
+    box-shadow: none;
+    font-weight: 600;
+  }
+  button.secundario:hover { background: var(--crema); color: var(--tinta); transform: none; box-shadow: none; border-color: #DCD3F5; }
+  button.peligro { background: var(--rosa); box-shadow: 0 6px 16px -4px rgba(255,107,129,0.5); }
+  button.peligro:hover { background: #FF4F68; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; transform: none !important; box-shadow: none !important; }
+
+  .error-texto { color: var(--rosa); font-size: 0.82rem; font-weight: 600; margin-top: -8px; margin-bottom: 14px; }
+  .oculto { display: none !important; }
+
+  /* ============== SHELL ============== */
+  .shell { display: flex; min-height: 100vh; position: relative; z-index: 1; }
+
+  .rail {
+    width: 250px;
+    flex-shrink: 0;
+    background: var(--blanco);
+    border-right: 2px solid var(--borde);
+    display: flex;
+    flex-direction: column;
+    padding: 26px 18px;
+  }
+  .rail-marca { display: flex; align-items: center; gap: 12px; padding: 4px 6px 22px; margin-bottom: 12px; }
+  .rail-marca .emoji-marca {
+    font-size: 1.6rem;
+    width: 44px; height: 44px;
+    display: flex; align-items: center; justify-content: center;
+    background: var(--violeta-claro);
+    border-radius: 14px;
+  }
+  .rail-marca-texto { display: flex; flex-direction: column; }
+  .rail-marca-texto strong { font-family: var(--font-titulo); font-size: 1rem; color: var(--tinta); }
+  .rail-marca-texto span { font-size: 0.7rem; color: var(--tinta-suave); }
+
+  .rail-seccion-titulo {
+    font-weight: 700;
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    color: var(--tinta-suave);
+    text-transform: uppercase;
+    padding: 0 10px;
+    margin: 16px 0 8px;
+  }
+  .rail-seccion-titulo:first-of-type { margin-top: 0; }
+
+  .rail-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 12px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--tinta-suave);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+  .rail-item:hover { background: var(--crema); color: var(--tinta); }
+  .rail-item.activo { background: var(--violeta); color: white; box-shadow: 0 6px 14px -4px rgba(124,92,252,0.45); }
+  .rail-item .emoji-item { font-size: 1.1rem; }
+
+  .rail-footer { margin-top: auto; padding-top: 16px; }
+
+  .main { flex: 1; min-width: 0; padding: 34px 42px 60px; max-width: 1040px; margin: 0 auto; width: 100%; }
+
+  .encabezado-dash { margin-bottom: 26px; }
+  .encabezado-dash h2 { font-size: 1.85rem; font-weight: 600; color: var(--tinta); display: flex; align-items: center; gap: 12px; }
+  .encabezado-dash p { color: var(--tinta-suave); font-size: 0.92rem; margin-top: 8px; max-width: 560px; }
+
+  /* Stat cards — la parte que le gustó, ahora bien colorida */
+  .resumen-rack { display: flex; gap: 14px; margin-bottom: 30px; flex-wrap: wrap; }
+  .chip-resumen {
+    display: flex; align-items: center; gap: 12px;
+    border-radius: 18px;
+    padding: 16px 22px;
+    min-width: 150px;
+    box-shadow: 0 8px 20px -8px rgba(43,33,64,0.12);
+  }
+  .chip-resumen.chip-signal { background: var(--lima-claro); }
+  .chip-resumen.chip-red { background: var(--rosa-claro); }
+  .chip-resumen.chip-amber { background: var(--naranja-claro); }
+  .chip-resumen .emoji-chip { font-size: 1.7rem; }
+  .chip-resumen .num { font-family: var(--font-titulo); font-size: 1.7rem; font-weight: 600; line-height: 1; color: var(--tinta); }
+  .chip-resumen .label { font-size: 0.76rem; color: var(--tinta-suave); font-weight: 600; margin-top: 2px; }
+
+  .panel-maestro-bloque {
+    background: var(--blanco);
+    border-radius: 24px;
+    padding: 30px 32px;
+    margin-bottom: 26px;
+    box-shadow: 0 10px 30px -14px rgba(43,33,64,0.1);
+  }
+  .panel-maestro-bloque > h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 10px; }
+  .panel-maestro-bloque .desc { color: var(--tinta-suave); font-size: 0.87rem; margin-bottom: 22px; line-height: 1.6; }
+
+  .subseccion-titulo {
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: var(--violeta-oscuro);
+    margin: 22px 0 14px;
+    padding-top: 22px;
+    border-top: 2px dashed var(--borde);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .subseccion-titulo:first-of-type { padding-top: 0; border-top: none; margin-top: 0; }
+
+  .fila-form { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+  .campo-maestro { flex: 1; min-width: 180px; }
+  .fila-form button { width: auto; padding: 13px 26px; flex-shrink: 0; }
+
+  .canvas-firma {
+    display: block;
+    width: 100%;
+    max-width: 500px;
+    height: 170px;
+    background: var(--crema);
+    border: 3px dashed #DCD3F5;
+    border-radius: 18px;
+    cursor: crosshair;
+    touch-action: none;
+    transition: border-color 0.15s ease, background 0.15s ease;
+  }
+  .canvas-firma:hover { border-color: var(--violeta); background: white; }
+
+  /* ============== Lista instituciones ============== */
+  .lista-instituciones { display: flex; flex-direction: column; gap: 12px; }
+
+  .fila-institucion {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    background: var(--crema);
+    border: 2px solid transparent;
+    border-radius: 20px;
+    gap: 16px;
+    flex-wrap: wrap;
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+  .fila-institucion:hover { transform: translateY(-2px); box-shadow: 0 10px 24px -10px rgba(43,33,64,0.18); border-color: var(--borde); }
+  .fila-institucion.rack-activa { background: var(--lima-claro); }
+  .fila-institucion.rack-suspendida { background: var(--rosa-claro); }
+
+  .bloque-nombre-inst { display: flex; align-items: flex-start; gap: 14px; }
+  .avatar-inst {
+    font-size: 1.6rem;
+    width: 46px; height: 46px;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: white;
+    border-radius: 14px;
+    box-shadow: 0 4px 10px -4px rgba(43,33,64,0.15);
+  }
+  .nombre-inst { font-family: var(--font-titulo); font-weight: 600; font-size: 1.05rem; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .meta-inst { color: var(--tinta-suave); font-size: 0.8rem; margin-top: 4px; }
+  .meta-inst a { color: var(--violeta-oscuro); }
+
+  .estado-pill {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    display: inline-flex; align-items: center; gap: 5px;
+  }
+  .estado-activa { background: var(--lima); color: white; }
+  .estado-suspendida { background: var(--rosa); color: white; }
+
+  .acciones-inst { display: flex; gap: 8px; flex-wrap: wrap; }
+  .acciones-inst button { width: auto; padding: 9px 16px; font-size: 0.8rem; box-shadow: none; }
+  .acciones-inst button:not(.secundario):not(.peligro) { background: var(--cielo); box-shadow: 0 4px 10px -4px rgba(61,174,234,0.5); }
+  .acciones-inst button:not(.secundario):not(.peligro):hover { background: #2A9BDA; }
+
+  .resultado-creacion {
+    background: var(--lima-claro);
+    border-radius: 18px;
+    padding: 20px 22px;
+    margin-top: 20px;
+    font-size: 0.88rem;
+    line-height: 1.6;
+  }
+  .resultado-creacion strong { color: #1FA173; }
+
+  .spinner-maestro {
+    display: inline-block;
+    width: 15px; height: 15px;
+    border: 2.5px solid rgba(255,255,255,0.4);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: girar 0.6s linear infinite;
+  }
+  @keyframes girar { to { transform: rotate(360deg); } }
+
+  .resumen-vacio-maestro {
+    color: var(--tinta-suave);
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 40px 20px;
+    border: 3px dashed var(--borde);
+    border-radius: 20px;
+  }
+
+  .overlay-modal-maestro {
+    position: fixed; inset: 0;
+    background: rgba(43,33,64,0.45);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10;
+    padding: 20px;
+  }
+  .modal-maestro {
+    background: var(--blanco);
+    border-radius: 24px;
+    padding: 32px 34px;
+    max-width: 440px;
+    width: 100%;
+    box-shadow: 0 30px 70px -20px rgba(43,33,64,0.4);
+  }
+  .modal-maestro h3 { font-size: 1.2rem; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+  .modal-maestro p { font-size: 0.87rem; color: var(--tinta-suave); margin-bottom: 16px; line-height: 1.6; }
+  .modal-maestro .acciones-modal-maestro { display: flex; gap: 10px; margin-top: 18px; }
+  .modal-maestro .acciones-modal-maestro button { width: auto; flex: 1; }
+
+  @media (max-width: 860px) {
+    .shell { flex-direction: column; }
+    .rail {
+      width: 100%;
+      flex-direction: row;
+      align-items: center;
+      padding: 14px 18px;
+      border-right: none;
+      border-bottom: 2px solid var(--borde);
+      overflow-x: auto;
+    }
+    .rail-marca { margin-bottom: 0; padding: 0; margin-right: 16px; }
+    .rail-seccion-titulo { display: none; }
+    .rail-item { white-space: nowrap; }
+    .rail-footer { margin-top: 0; margin-left: auto; padding-top: 0; }
+    .main { padding: 24px 18px 50px; margin: 0; max-width: 100%; }
+    .blob-fondo { display: none; }
+  }
+</style>
+</head>
+<body>
+
+  <div class="blob-fondo blob-1"></div>
+  <div class="blob-fondo blob-2"></div>
+  <div class="blob-fondo blob-3"></div>
+
+  <div id="vista-login" class="contenedor-login">
+    <div class="tarjeta-login">
+      <div class="marca-login">
+        <span class="emoji-marca">🚀</span>
+        <div>
+          <div class="nombre-marca">Panel Maestro</div>
+          <div class="subt-marca">Del Austral · Infra</div>
+        </div>
+      </div>
+      <h1 id="titulo-login-maestro">¡Hola de nuevo! 👋</h1>
+      <p id="desc-login-maestro">Ingresá tu clave de Super Admin para entrar.</p>
+      <form id="form-login-maestro">
+        <label for="input-clave-maestro">Clave</label>
+        <input type="password" id="input-clave-maestro" placeholder="••••••••" autocomplete="off">
+        <div class="error-texto oculto" id="error-login-maestro"></div>
+        <button type="submit" id="btn-submit-login-maestro">Entrar ✨</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="shell">
+    <aside class="rail oculto" id="rail-navegacion">
+      <div class="rail-marca">
+        <span class="emoji-marca">🚀</span>
+        <div class="rail-marca-texto">
+          <strong>Panel Maestro</strong>
+          <span>Del Austral · Infra</span>
+        </div>
+      </div>
+
+      <div class="rail-seccion-titulo">Operación</div>
+      <div class="rail-item activo">
+        <span class="emoji-item">🏢</span>
+        Instituciones
+      </div>
+
+      <div class="rail-footer">
+        <button class="secundario oculto" id="btn-cerrar-sesion-maestro" style="width:100%;">Cerrar sesión 👋</button>
+      </div>
+    </aside>
+
+    <div id="vista-dashboard" class="main oculto">
+      <div class="encabezado-dash">
+        <h2>🏢 Instituciones</h2>
+        <p>Cada una vive en su propia base de datos, completamente aislada de las demás. ¡Como departamentos separados en el mismo edificio!</p>
+      </div>
+
+      <div class="resumen-rack" id="resumen-rack-instituciones"></div>
+
+      <div class="panel-maestro-bloque">
+        <h3>✨ Crear institución nueva</h3>
+        <p class="desc">Genera la carpeta, la base de datos, el usuario MySQL dedicado, y el sistema instalado y listo para usar. Los datos del contrato son obligatorios: sin la firma del apoderado acá, y sin que el apoderado de la institución firme también de su lado, no va a poder crear su clave de acceso.</p>
+
+        <div class="subseccion-titulo">🏥 Datos de la institución</div>
+        <div class="fila-form">
+          <div class="campo-maestro">
+            <label>Nombre de la institución</label>
+            <input type="text" id="input-nombre-institucion-nueva" placeholder="Ej: Hospital Regional">
+          </div>
+          <div class="campo-maestro">
+            <label>Carpeta / URL (opcional)</label>
+            <input type="text" id="input-carpeta-institucion-nueva" placeholder="Se genera del nombre si lo dejás vacío">
+          </div>
+        </div>
+
+        <div id="bloque-datos-contrato">
+          <div class="subseccion-titulo">📄 Contrato de servicio</div>
+          <div class="fila-form" style="margin-bottom:14px;">
+            <div class="campo-maestro">
+              <label>Razón social / nombre del cliente</label>
+              <input type="text" id="input-razon-social-cliente" placeholder="Ej: Hospital Regional S.A.">
+            </div>
+            <div class="campo-maestro">
+              <label>CUIT / DNI del responsable</label>
+              <input type="text" id="input-cuit-dni-cliente" placeholder="Ej: 30-12345678-9">
+            </div>
+          </div>
+          <div class="fila-form" style="margin-bottom:14px;">
+            <div class="campo-maestro">
+              <label>Plazo del contrato</label>
+              <select id="select-plazo-tipo-contrato">
+                <option value="indeterminado">Indeterminado (hasta que ambas partes acuerden cesar)</option>
+                <option value="dias">Días</option>
+                <option value="meses">Meses</option>
+                <option value="anios">Años</option>
+              </select>
+            </div>
+            <div class="campo-maestro oculto" id="campo-plazo-cantidad">
+              <label>Cantidad</label>
+              <input type="text" id="input-plazo-cantidad-contrato" placeholder="Ej: 12" inputmode="numeric">
+            </div>
+            <div class="campo-maestro">
+              <label>Modalidad de pago</label>
+              <select id="select-modalidad-pago-contrato">
+                <option value="mensual">Mensual</option>
+                <option value="anual">Anual</option>
+              </select>
+            </div>
+          </div>
+          <div class="fila-form" style="margin-bottom:14px;">
+            <div class="campo-maestro">
+              <label>Precio del servicio (opcional)</label>
+              <input type="text" id="input-precio-monto-contrato" placeholder="Ej: 150000" inputmode="decimal">
+            </div>
+            <div class="campo-maestro">
+              <label>Moneda</label>
+              <select id="select-precio-moneda-contrato">
+                <option value="ARS">Pesos argentinos (ARS)</option>
+                <option value="USD">Dólares (USD)</option>
+                <option value="EUR">Euros (EUR)</option>
+              </select>
+            </div>
+          </div>
+          <div class="fila-form" style="margin-bottom:14px;">
+            <div class="campo-maestro">
+              <label>RAM del servidor (GB)</label>
+              <input type="text" id="input-ram-contrato" value="16" inputmode="numeric">
+            </div>
+            <div class="campo-maestro">
+              <label>Disco SSD (GB)</label>
+              <input type="text" id="input-disco-contrato" value="25" inputmode="numeric">
+            </div>
+            <div class="campo-maestro">
+              <label>Horario de backup</label>
+              <input type="text" id="input-backup-horario-contrato" value="3 a 5 A.M.">
+            </div>
+          </div>
+          <div class="fila-form" style="margin-bottom:0;">
+            <div class="campo-maestro">
+              <label>Ubicación del servidor</label>
+              <input type="text" id="input-ubicacion-servidor-contrato" value="Santiago de Chile, Chile">
+            </div>
+            <div class="campo-maestro">
+              <label>Fecha del contrato</label>
+              <input type="text" id="input-fecha-contrato" placeholder="Se completa con la fecha de hoy" disabled>
+            </div>
+          </div>
+
+          <div class="subseccion-titulo">🖋️ Datos del Prestador</div>
+          <div class="fila-form" style="margin-bottom:14px;">
+            <div class="campo-maestro">
+              <label>Marca / nombre comercial del Prestador</label>
+              <input type="text" id="input-prestador-marca-contrato" value="DEL AUSTRAL">
+            </div>
+            <div class="campo-maestro">
+              <label>Titular — nombre completo</label>
+              <input type="text" id="input-prestador-titular-nombre-contrato" value="MONTERO, FABIANA KARINA">
+            </div>
+            <div class="campo-maestro">
+              <label>Titular — CUIL</label>
+              <input type="text" id="input-prestador-titular-cuil-contrato" value="27-20746451-7">
+            </div>
+          </div>
+          <div class="fila-form" style="margin-bottom:0;">
+            <div class="campo-maestro">
+              <label>Apoderado — nombre completo</label>
+              <input type="text" id="input-prestador-apoderado-nombre-contrato" value="LORENZ MONTERO, ARIAN TAHIEL">
+            </div>
+            <div class="campo-maestro">
+              <label>Apoderado — CUIL</label>
+              <input type="text" id="input-prestador-apoderado-cuil-contrato" value="20-46143095-4">
+            </div>
+          </div>
+
+          <div class="subseccion-titulo">⏳ Plazos legales</div>
+          <div class="fila-form">
+            <div class="campo-maestro">
+              <label>Tolerancia de mora (meses)</label>
+              <input type="text" id="input-tolerancia-mora-contrato" value="2" inputmode="numeric">
+            </div>
+            <div class="campo-maestro">
+              <label>Entrega de datos tras cese (días hábiles)</label>
+              <input type="text" id="input-plazo-entrega-datos-contrato" value="7" inputmode="numeric">
+            </div>
+            <div class="campo-maestro">
+              <label>Preaviso para rescindir (días corridos)</label>
+              <input type="text" id="input-preaviso-rescision-contrato" value="30" inputmode="numeric">
+            </div>
+          </div>
+
+          <div class="subseccion-titulo">✍️ Firma del apoderado (obligatoria)</div>
+          <canvas id="canvas-firma-apoderado" width="500" height="170" class="canvas-firma"></canvas>
+          <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+            <button type="button" class="secundario" id="btn-limpiar-firma-apoderado" style="width:auto; padding:10px 18px; font-size:0.82rem;">🧹 Limpiar firma</button>
+          </div>
+        </div>
+
+        <div style="margin-top:24px;">
+          <button id="btn-crear-institucion" disabled>✍️ Firmá el contrato para continuar</button>
+        </div>
+
+        <div id="resultado-creacion-institucion" class="oculto"></div>
+      </div>
+
+      <div class="panel-maestro-bloque">
+        <h3>📋 Instituciones activas</h3>
+        <p class="desc" style="margin-bottom:16px;">Verde: todo en orden. Rosa: suspendida.</p>
+        <div id="lista-instituciones" class="lista-instituciones">
+          <p class="resumen-vacio-maestro">Cargando…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay-borrar-institucion" class="overlay-modal-maestro oculto">
+    <div class="modal-maestro">
+      <h3 style="color:var(--rosa);">⚠️ Borrar institución para siempre</h3>
+      <p id="texto-confirmar-borrado-inst"></p>
+      <p>Para confirmar, escribí el nombre exacto de la carpeta abajo:</p>
+      <input type="text" id="input-confirmar-borrado-inst" placeholder="nombre-de-la-carpeta" autocomplete="off">
+      <div class="acciones-modal-maestro">
+        <button class="secundario" id="btn-cancelar-borrado-inst">Cancelar</button>
+        <button class="peligro" id="btn-confirmar-borrado-inst">Borrar para siempre</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="overlay-editar-contrato" class="overlay-modal-maestro oculto">
+    <div class="modal-maestro" style="max-width:680px; text-align:left; max-height:85vh; overflow-y:auto;">
+      <h3>📄 Datos del contrato</h3>
+      <p class="desc" id="texto-editando-contrato-de" style="margin-bottom:16px;"></p>
+      <input type="hidden" id="input-editar-institucion-id">
+
+      <div class="fila-form" style="margin-bottom:14px;">
+        <div class="campo-maestro">
+          <label>Razón social / nombre del cliente</label>
+          <input type="text" id="input-editar-razon-social-cliente" placeholder="Ej: Hospital Regional S.A.">
+        </div>
+        <div class="campo-maestro">
+          <label>CUIT / DNI del responsable</label>
+          <input type="text" id="input-editar-cuit-dni-cliente" placeholder="Ej: 30-12345678-9">
+        </div>
+      </div>
+      <div class="fila-form" style="margin-bottom:14px;">
+        <div class="campo-maestro">
+          <label>Plazo del contrato</label>
+          <select id="select-editar-plazo-tipo-contrato">
+            <option value="indeterminado">Indeterminado</option>
+            <option value="dias">Días</option>
+            <option value="meses">Meses</option>
+            <option value="anios">Años</option>
+          </select>
+        </div>
+        <div class="campo-maestro oculto" id="campo-editar-plazo-cantidad">
+          <label>Cantidad</label>
+          <input type="text" id="input-editar-plazo-cantidad-contrato" inputmode="numeric">
+        </div>
+        <div class="campo-maestro">
+          <label>Modalidad de pago</label>
+          <select id="select-editar-modalidad-pago-contrato">
+            <option value="mensual">Mensual</option>
+            <option value="anual">Anual</option>
+          </select>
+        </div>
+      </div>
+      <div class="fila-form" style="margin-bottom:14px;">
+        <div class="campo-maestro">
+          <label>Precio del servicio (opcional)</label>
+          <input type="text" id="input-editar-precio-monto-contrato" inputmode="decimal">
+        </div>
+        <div class="campo-maestro">
+          <label>Moneda</label>
+          <select id="select-editar-precio-moneda-contrato">
+            <option value="ARS">Pesos argentinos (ARS)</option>
+            <option value="USD">Dólares (USD)</option>
+            <option value="EUR">Euros (EUR)</option>
+          </select>
+        </div>
+      </div>
+      <div class="fila-form" style="margin-bottom:14px;">
+        <div class="campo-maestro">
+          <label>RAM del servidor (GB)</label>
+          <input type="text" id="input-editar-ram-contrato" inputmode="numeric">
+        </div>
+        <div class="campo-maestro">
+          <label>Disco SSD (GB)</label>
+          <input type="text" id="input-editar-disco-contrato" inputmode="numeric">
+        </div>
+        <div class="campo-maestro">
+          <label>Horario de backup</label>
+          <input type="text" id="input-editar-backup-horario-contrato">
+        </div>
+      </div>
+      <div class="fila-form" style="margin-bottom:14px;">
+        <div class="campo-maestro">
+          <label>Ubicación del servidor</label>
+          <input type="text" id="input-editar-ubicacion-servidor-contrato">
+        </div>
+      </div>
+
+      <p class="desc" style="margin:18px 0 10px; font-size:0.8rem;">🖋️ Datos del Prestador:</p>
+      <div class="fila-form" style="margin-bottom:14px;">
+        <div class="campo-maestro">
+          <label>Marca / nombre comercial</label>
+          <input type="text" id="input-editar-prestador-marca-contrato">
+        </div>
+        <div class="campo-maestro">
+          <label>Titular — nombre completo</label>
+          <input type="text" id="input-editar-prestador-titular-nombre-contrato">
+        </div>
+        <div class="campo-maestro">
+          <label>Titular — CUIL</label>
+          <input type="text" id="input-editar-prestador-titular-cuil-contrato">
+        </div>
+      </div>
+      <div class="fila-form" style="margin-bottom:14px;">
+        <div class="campo-maestro">
+          <label>Apoderado — nombre completo</label>
+          <input type="text" id="input-editar-prestador-apoderado-nombre-contrato">
+        </div>
+        <div class="campo-maestro">
+          <label>Apoderado — CUIL</label>
+          <input type="text" id="input-editar-prestador-apoderado-cuil-contrato">
+        </div>
+      </div>
+
+      <p class="desc" style="margin:18px 0 10px; font-size:0.8rem;">⏳ Plazos legales:</p>
+      <div class="fila-form" style="margin-bottom:18px;">
+        <div class="campo-maestro">
+          <label>Tolerancia de mora (meses)</label>
+          <input type="text" id="input-editar-tolerancia-mora-contrato" inputmode="numeric">
+        </div>
+        <div class="campo-maestro">
+          <label>Entrega de datos tras cese (días hábiles)</label>
+          <input type="text" id="input-editar-plazo-entrega-datos-contrato" inputmode="numeric">
+        </div>
+        <div class="campo-maestro">
+          <label>Preaviso para rescindir (días corridos)</label>
+          <input type="text" id="input-editar-preaviso-rescision-contrato" inputmode="numeric">
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px; padding-top:18px; border-top:2px dashed var(--borde);">
+        <p class="desc" id="texto-estado-firma-apoderado" style="margin-bottom:10px;">✍️ Firma del apoderado:</p>
+        <canvas id="canvas-editar-firma-apoderado" width="500" height="170" class="canvas-firma"></canvas>
+        <div style="display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;">
+          <button type="button" class="secundario" id="btn-limpiar-editar-firma-apoderado" style="width:auto; padding:10px 18px; font-size:0.82rem;">🧹 Limpiar / volver a firmar</button>
+        </div>
+      </div>
+
+      <p id="error-editar-contrato" class="error-texto oculto"></p>
+
+      <div class="acciones-modal-maestro">
+        <button class="secundario" id="btn-cancelar-editar-contrato">Cancelar</button>
+        <button id="btn-guardar-editar-contrato">Guardar contrato ✅</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app_maestro.js"></script>
+</body>
+</html>
