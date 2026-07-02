@@ -1,0 +1,11 @@
+[
+    {
+        "cobro_id": 9,
+        "archivo": "factura_2026-07_9.html",
+        "mes": "2026-07",
+        "monto": 980000,
+        "moneda": "ARS",
+        "estado": "pendiente",
+        "vencimiento": "2026-07-01"
+    }
+]

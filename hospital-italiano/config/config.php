@@ -14,16 +14,16 @@
  */
 
 define('DB_HOST', 'localhost');
-define('DB_NAME', 'TU_USUARIO_legajos');
-define('DB_USER', 'TU_USUARIO_admin');
-define('DB_PASS', 'TU_CONTRASEÑA_AQUI');
+define('DB_NAME', 'inst_hospital_italiano_0d7f1b');
+define('DB_USER', 'u_hospital_italiano_0d7f1b');
+define('DB_PASS', 'e4c547ccac89e0256198540f7afcf8cd');
 
 /**
  * Clave secreta usada para firmar la sesión de acceso.
  * Cambiala por cualquier texto largo y random, una sola vez,
  * antes de subir el sitio. No la compartas.
  */
-define('APP_SECRET', 'cambiar-esto-por-un-texto-largo-y-aleatorio-unico');
+define('APP_SECRET', '96d7b923599e9e070b8a8f603ca9b97485ad4f53f0ed93c6');
 
 // ------------------------------------------------------------
 // No es necesario tocar nada debajo de esta línea

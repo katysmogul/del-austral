@@ -26,9 +26,52 @@ CREATE TABLE IF NOT EXISTS instituciones (
     carpeta VARCHAR(80) NOT NULL UNIQUE,
     db_nombre VARCHAR(80) NOT NULL UNIQUE,
     db_usuario VARCHAR(80) NOT NULL UNIQUE,
-    estado ENUM('activa', 'suspendida') NOT NULL DEFAULT 'activa',
+    estado ENUM('activa', 'suspendida', 'suspendida_por_pago') NOT NULL DEFAULT 'activa',
+    suspendida_por_cobro_id INT NULL,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    notas TEXT NULL
+    notas TEXT NULL,
+    saldo_favor DECIMAL(12,2) NOT NULL DEFAULT 0,
+    cuenta_titular VARCHAR(150) NULL,
+    cuenta_banco VARCHAR(100) NULL,
+    cuenta_cuil VARCHAR(30) NULL,
+    cuenta_numero VARCHAR(60) NULL,
+    cuenta_alias VARCHAR(60) NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS cobros (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    institucion_id INT NOT NULL,
+    monto_lista DECIMAL(12,2) NOT NULL,
+    descuento_pct DECIMAL(5,2) NOT NULL DEFAULT 0,
+    monto DECIMAL(12,2) NOT NULL,
+    moneda VARCHAR(10) NOT NULL DEFAULT 'ARS',
+    periodo_desde DATE NULL,
+    periodo_hasta DATE NULL,
+    vencimiento DATE NOT NULL,
+    estado ENUM('pendiente', 'comprobante_subido', 'aprobado', 'sin_acreditar', 'rechazado', 'anulado') NOT NULL DEFAULT 'pendiente',
+    comprobante_nombre_original VARCHAR(255) NULL,
+    comprobante_nombre_archivo VARCHAR(255) NULL,
+    comprobante_subido_en TIMESTAMP NULL,
+    notas_super_admin TEXT NULL,
+    motivo_anulacion VARCHAR(255) NULL,
+    recargo_congelado_en DATE NULL,
+    recargo_congelado_monto DECIMAL(12,2) NULL,
+    revisado_en TIMESTAMP NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (institucion_id) REFERENCES instituciones(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS movimientos_saldo_favor (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    institucion_id INT NOT NULL,
+    tipo ENUM('carga', 'aplicado_a_cobro') NOT NULL,
+    monto DECIMAL(12,2) NOT NULL,
+    cobro_id INT NULL,
+    nota VARCHAR(255) NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (institucion_id) REFERENCES instituciones(id) ON DELETE CASCADE,
+    FOREIGN KEY (cobro_id) REFERENCES cobros(id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS contratos (

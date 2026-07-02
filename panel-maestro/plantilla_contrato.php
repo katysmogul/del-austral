@@ -104,13 +104,13 @@ function renderizarDocumentoContratoHTML(array $contrato, bool $incluirBarraExpo
   * { box-sizing: border-box; }
   body {
     font-family: 'Helvetica Neue', Arial, sans-serif;
-    color: #232B28;
+    color: #1A1A1A;
     max-width: 780px;
     margin: 0 auto;
     padding: 30px 24px 60px;
     line-height: 1.5;
     font-size: 0.92rem;
-    background: #FBFAF7;
+    background: #FDFBF6;
     position: relative;
   }
   .marca-agua {
@@ -123,8 +123,8 @@ function renderizarDocumentoContratoHTML(array $contrato, bool $incluirBarraExpo
   .marca-agua span {
     font-size: 7.5rem;
     font-weight: 800;
-    color: #2E5249;
-    opacity: 0.06;
+    color: #FF7A2E;
+    opacity: 0.07;
     transform: rotate(-35deg);
     letter-spacing: 0.1em;
     white-space: nowrap;
@@ -133,27 +133,28 @@ function renderizarDocumentoContratoHTML(array $contrato, bool $incluirBarraExpo
   }
   .barra-exportar {
     position: sticky; top: 0;
-    background: #2E5249; color: white;
+    background: #1A1A1A; color: white;
     padding: 14px 20px; margin: -30px -24px 26px;
     display: flex; align-items: center; justify-content: space-between;
     font-family: Arial, sans-serif;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15);
   }
   .barra-exportar button {
-    background: white; color: #2E5249; border: none;
-    padding: 10px 20px; border-radius: 999px; font-weight: 700;
-    cursor: pointer; font-size: 0.9rem;
+    background: #FF7A2E; color: #1A1A1A; border: 2px solid #1A1A1A;
+    padding: 9px 18px; border-radius: 999px; font-weight: 800;
+    cursor: pointer; font-size: 0.88rem;
   }
 
   .etiqueta-ejemplar {
     text-align: center;
-    color: #ffffff;
-    background: #2E5249;
+    color: #1A1A1A;
+    background: #FF7A2E;
+    border: 2px solid #1A1A1A;
     display: inline-block;
-    padding: 5px 18px;
+    padding: 4px 18px;
     border-radius: 999px;
-    font-size: 0.72rem;
-    font-weight: 700;
+    font-size: 0.7rem;
+    font-weight: 800;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     margin: 0 auto 14px;
@@ -161,20 +162,24 @@ function renderizarDocumentoContratoHTML(array $contrato, bool $incluirBarraExpo
   .contenedor-etiqueta-ejemplar { text-align: center; }
 
   .encabezado-contrato {
-    border-bottom: 3px solid #2E5249;
+    border-bottom: 3px solid #1A1A1A;
     padding-bottom: 14px;
     margin-bottom: 20px;
   }
   h1 {
-    font-size: 1.2rem;
+    font-family: 'Arial Narrow', Arial, sans-serif;
+    font-size: 1.35rem;
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 0.03em;
+    font-weight: 800;
     margin: 0 0 6px;
-    color: #1F3A33;
+    color: #1A1A1A;
   }
   h2.titulo-anexo {
-    font-size: 1.02rem;
+    font-family: 'Arial Narrow', Arial, sans-serif;
+    font-size: 1.15rem;
+    font-weight: 800;
     text-align: center;
     text-transform: uppercase;
     letter-spacing: 0.03em;
@@ -182,14 +187,15 @@ function renderizarDocumentoContratoHTML(array $contrato, bool $incluirBarraExpo
     color: #ffffff;
   }
   .barra-titulo-anexo {
-    background: #2E5249;
+    background: #1A1A1A;
+    border: 2px solid #1A1A1A;
     padding: 12px 20px;
-    border-radius: 8px;
+    border-radius: 6px;
     margin-bottom: 4px;
   }
-  .subtitulo-contrato { text-align: center; color: #5B6660; font-size: 0.82rem; margin-bottom: 0; }
+  .subtitulo-contrato { text-align: center; color: #6B6459; font-size: 0.82rem; margin-bottom: 0; }
   .clausula { margin-bottom: 12px; text-align: justify; }
-  .clausula .num { font-weight: 700; color: #1F3A33; }
+  .clausula .num { font-weight: 800; color: #1A1A1A; }
 
   .firma-bloque {
     display: flex;
@@ -199,12 +205,12 @@ function renderizarDocumentoContratoHTML(array $contrato, bool $incluirBarraExpo
   }
   .firma-item { flex: 1; text-align: center; }
   .linea-firma-contrato {
-    border-top: 1.5px solid #232B28;
+    border-top: 2px solid #1A1A1A;
     margin-bottom: 8px;
     padding-top: 45px;
   }
   .firma-item strong { display: block; font-size: 0.92rem; }
-  .firma-item .rol-firma { font-size: 0.8rem; color: #5B6660; }
+  .firma-item .rol-firma { font-size: 0.8rem; color: #6B6459; }
   .imagen-firma {
     display: block;
     max-width: 220px;
@@ -215,31 +221,33 @@ function renderizarDocumentoContratoHTML(array $contrato, bool $incluirBarraExpo
   .nota-firma-digital {
     text-align: center;
     font-size: 0.7rem;
-    color: #5B6660;
+    color: #6B6459;
     margin-top: -8px;
   }
   .lugar-fecha-firma {
     text-align: center;
     margin-top: 24px;
     font-size: 0.85rem;
-    color: #5B6660;
+    color: #6B6459;
   }
 
   .pie-contrato {
     margin-top: 26px;
     padding-top: 12px;
-    border-top: 1px solid #D8D2C2;
+    border-top: 2px dashed #EAE3D6;
     font-size: 0.7rem;
-    color: #8A948D;
+    color: #6B6459;
     text-align: center;
   }
+  .mascota-pie { width: 22px; height: 22px; margin: 0 auto 6px; opacity: 0.8; }
+  .mascota-pie svg { display: block; width: 100%; height: 100%; }
 
   .bloque-anexo { margin-top: 22px; }
-  .subtitulo-anexo { text-align: center; color: #5B6660; font-size: 0.8rem; margin-bottom: 16px; }
+  .subtitulo-anexo { text-align: center; color: #6B6459; font-size: 0.8rem; margin-bottom: 16px; }
 
   .recuadro-clausula-numerada {
-    background: #F1EFE6;
-    border-left: 4px solid #2E5249;
+    background: #FDF3E7;
+    border-left: 4px solid #FF7A2E;
     padding: 14px 18px;
     border-radius: 0 6px 6px 0;
   }
@@ -432,6 +440,15 @@ function renderizarDocumentoContratoHTML(array $contrato, bool $incluirBarraExpo
   </div>
 
   <div class="pie-contrato">
+    <div class="mascota-pie">
+      <svg viewBox="0 0 100 100" fill="none">
+        <path d="M50 8 L54 26 L64 12 L60 30 L76 20 L66 36 L84 32 L68 44 L86 46 L68 52 L82 62 L64 58 L72 74 L56 64 L58 82 L48 68 L40 84 L38 66 L24 76 L30 60 L14 64 L26 50 L10 46 L28 42 L16 28 L34 34 L32 16 L44 28 Z" fill="#FF7A2E"/>
+        <circle cx="50" cy="58" r="22" fill="#1A1A1A"/>
+        <circle cx="42" cy="55" r="3.5" fill="white"/>
+        <circle cx="58" cy="55" r="3.5" fill="white"/>
+        <path d="M42 66 Q50 71 58 66" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+      </svg>
+    </div>
     <?= e($contrato['nombre_institucion']) ?> · <?= $marcaPrestador ?> · Comodoro Rivadavia, Chubut, Argentina
   </div>
 

@@ -1,0 +1,25 @@
+{
+    "saldo_favor": 0,
+    "cuenta": {
+        "titular": "MONTERO, FABIANA KARINA",
+        "banco": "Banco Santander",
+        "cuil": "27-20746451-7",
+        "numero": "0000003100000012345678",
+        "alias": "delaustral.pagos"
+    },
+    "cobro": {
+        "id": 9,
+        "monto_lista": 980000,
+        "descuento_pct": 0,
+        "monto": 980000,
+        "recargo_mora_vigente": 29645,
+        "monto_con_recargo": 1009645,
+        "moneda": "ARS",
+        "vencimiento": "2026-07-01",
+        "estado": "pendiente",
+        "comprobante_nombre_original": null,
+        "notas_super_admin": null,
+        "saldo_favor_aplicado": 0
+    },
+    "sincronizado_en": "2026-07-02 02:55:01"
+}

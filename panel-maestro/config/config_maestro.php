@@ -48,6 +48,25 @@ define('RUTA_INSTALACIONES', dirname(__DIR__, 2));
 // se le muestran al Super Admin después de crear una institución.
 define('URL_BASE', 'https://neptuno.delaustral.com');
 
+// Cuenta bancaria por defecto para los cobros, usada cuando la
+// institución no tiene una cuenta propia configurada. Se puede
+// sobreescribir por institución desde "Editar contrato".
+define('CUENTA_DEFAULT', [
+    'titular' => 'MONTERO, FABIANA KARINA',
+    'banco' => 'Banco Santander',
+    'cuil' => '27-20746451-7',
+    'numero' => '0000003100000012345678',
+    'alias' => 'delaustral.pagos',
+]);
+
+// Nombre propio de cookie de sesión: sin esto, PHP usa el nombre
+// por defecto "PHPSESSID" en TODOS los sitios del mismo dominio
+// (panel maestro y cada institución viven bajo el mismo dominio,
+// en subcarpetas distintas). Eso hacía que loguearse en un panel
+// pisara la sesión del otro. Con nombres distintos, cada sistema
+// tiene su propia cookie y las sesiones quedan realmente
+// independientes entre sí.
+session_name('panelmaestro_sesion');
 session_start();
 
 function obtenerConexionMaestro() {
@@ -102,7 +121,7 @@ function requiereSesionMaestro() {
  * cliente específica, leyendo sus credenciales desde el
  * config.php real que vive en su carpeta de instalación. Se usa
  * solo para tareas administrativas concretas (por ejemplo, leer
- * si el desarrollador ya firmó el contrato) — nunca para operar
+ * si el apoderado ya firmó el contrato) — nunca para operar
  * sobre los datos clínicos de esa institución.
  *
  * Devuelve null si la carpeta, el config.php, o la conexión no
